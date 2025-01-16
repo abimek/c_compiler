@@ -20,45 +20,45 @@ std::string token_type_to_string(TokenType t) {
 		case IF:
 			return "IF";
 		case INT:
-				return "INT";
+			return "INT";
 		case FLOAT:
-					return "FLOAT";
+			return "FLOAT";
 		case STRING:
-					return "STRING";
+			return "STRING";
 		case INT_DATA:
-					return "INT_DATA";
+			return "INT_DATA";
 		case FLOAT_DATA:
-					return "FLOAT_DATA";
+			return "FLOAT_DATA";
 		case LPAREN:
-					return "LPAREN";
+			return "LPAREN";
 		case RPAREN:
-					return "RPAREN";
+			return "RPAREN";
 		case LCBRACKET:
-					return "LCBRACKET";
+			return "LCBRACKET";
 		case RCBRACKET:
-					return "RCBRACKET";
+			return "RCBRACKET";
 		case LHBRACKET:
-					return "LHBRACKET";
+			return "LHBRACKET";
 		case RHBRACKET:
-					return "RHBRACKET";
+			return "RHBRACKET";
 		case SEMICOLON:
-					return "SEMICOLON";
+			return "SEMICOLON";
 		case COLON:
-					return "COLON";
+			return "COLON";
 		case EQUALS:
-					return "EQUALS";
+			return "EQUALS";
 		case DOUBLEEQUALS:
-					return "DOUBLEEQUALS";
+			return "DOUBLEEQUALS";
 		case COMMENT:
-					return "COMMENT";
+			return "COMMENT";
 		case PLUS:
-					return "PLUS";
+			return "PLUS";
 		case MINUS:
-					return "MINUS";
+			return "MINUS";
 		case MULTIPLY:
-					return "MULTIPLY";
+			return "MULTIPLY";
 		case DIVIDE:
-					return "DIVIDE";
+			return "DIVIDE";
 	}
 }
 
