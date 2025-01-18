@@ -5,6 +5,27 @@
 #include <vector>
 #include <iostream>
 
+// Lexer defined methods
+void Lexer::step() {
+	last_char += 1;
+	current_char += 1;
+}
+
+char Lexer::read_current_char(){
+	if(current_char >= sourcecode.length()){
+		throw std::runtime_error("Unable to read next char");
+	}
+	return sourcecode[current_char];
+}
+
+char Lexer::read_next_char(){
+	if(current_char+1 >= sourcecode.length()){
+		throw std::runtime_error("Unable to read next char");
+	}
+	return sourcecode[current_char+1];
+}
+
+//<< Overriding for printing out Token
 std::ostream& operator<<(std::ostream& os, Token token) {
     // Customize how the struct is printed
     os << "Token { type: " << token_type_to_string(token.type)
@@ -21,6 +42,8 @@ std::string token_type_to_string(TokenType t) {
 			return "IF";
 		case INT:
 			return "INT";
+		case STRUCT:
+			return "STRUCT";
 		case FLOAT:
 			return "FLOAT";
 		case STRING:
@@ -51,6 +74,10 @@ std::string token_type_to_string(TokenType t) {
 			return "DOUBLEEQUALS";
 		case COMMENT:
 			return "COMMENT";
+		case COMMA:
+			return "COMMA";
+		case PERIOD:
+			return "PERIOD";
 		case PLUS:
 			return "PLUS";
 		case MINUS:
@@ -62,34 +89,6 @@ std::string token_type_to_string(TokenType t) {
 	}
 }
 
-void Lexer::step() {
-	last_char += 1;
-	current_char += 1;
-}
-
-char Lexer::read_current_char(){
-	if(current_char >= sourcecode.length()){
-		throw std::runtime_error("Unable to read next char");
-	}
-	return sourcecode[current_char];
-}
-
-char Lexer::read_next_char(){
-	if(current_char+1 >= sourcecode.length()){
-		throw std::runtime_error("Unable to read next char");
-	}
-	return sourcecode[current_char+1];
-}
-
-//predefines
-void lex_string(Lexer* lexer);
-void lex_identifier(Lexer* lexer);
-void lex_number(Lexer* lexer);
-void lex_equal(Lexer* lexer);
-void lex_slash(Lexer* lexer);
-bool is_int_or_letter(char ch);
-bool is_int(char ch);
-bool is_letter(char ch);
 //CODE
 std::vector<Token> tokenize(std::string sourcecode){
 	Lexer lexer;	
@@ -110,6 +109,14 @@ std::vector<Token> tokenize(std::string sourcecode){
 				break;
 			case '*':
 				lexer.tokens.push_back({MULTIPLY});
+				lexer.step();
+				break;
+			case ',':
+				lexer.tokens.push_back({COMMA});
+				lexer.step();
+				break;
+			case '.':
+				lexer.tokens.push_back({PERIOD});
 				lexer.step();
 				break;
 			case '/':
@@ -186,6 +193,8 @@ void lex_identifier(Lexer* lexer) {
 		identifier_token.content += lexer->read_current_char();
 		lexer->step();
 	}
+
+	// Handle language constructs here
 	if(identifier_token.content == "if"){
 			identifier_token = {IF, ""};
 	}
@@ -195,6 +204,13 @@ void lex_identifier(Lexer* lexer) {
 	if(identifier_token.content == "float"){
 			identifier_token = {FLOAT, ""};
 	}
+	if(identifier_token.content == "struct"){
+			identifier_token = {STRUCT, ""};
+	}
+	if(identifier_token.content == "return"){
+			identifier_token = {RETURN, ""};
+	}
+
 	lexer->tokens.push_back(identifier_token);
 }
 
@@ -263,5 +279,3 @@ void lex_string(Lexer* lexer){
 	lexer->step();
 	lexer->tokens.push_back(string_token);
 }
-
-

@@ -2,11 +2,14 @@
 #include <string>
 #include <vector>
 #include <iostream>
+
 enum TokenType {
 	IDENTIFIER,
 
-	//LANGUAGE
+	//KEYWORDS
 	IF,
+	STRUCT,
+	RETURN,
 
 	//PRIMITIVES
 	INT,
@@ -31,15 +34,18 @@ enum TokenType {
 	EQUALS,
 	DOUBLEEQUALS,
 	COMMENT,
+	COMMA,
+	PERIOD,
 
 	//MATH
 	PLUS,
 	MINUS,
 	MULTIPLY,
 	DIVIDE,
-
 };
+
 std::string token_type_to_string(TokenType t);
+
 // token type
 struct Token {
 	TokenType type;
@@ -47,6 +53,7 @@ struct Token {
 };
 std::ostream& operator<<(std::ostream& os, Token token);
 
+// Main lexer construct
 struct Lexer{
 	int last_char;
 	int current_char;
@@ -59,3 +66,13 @@ struct Lexer{
 };
 
 std::vector<Token> tokenize(std::string sourcecode);
+
+//predefined funcs
+void lex_string(Lexer* lexer);
+void lex_identifier(Lexer* lexer);
+void lex_number(Lexer* lexer);
+void lex_equal(Lexer* lexer);
+void lex_slash(Lexer* lexer);
+bool is_int_or_letter(char ch);
+bool is_int(char ch);
+bool is_letter(char ch);
