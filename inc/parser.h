@@ -4,6 +4,7 @@ namespace parser_testing {
 	void test_variable_decleration_no_initilization();
 	void test_struct_decleration();
 }
+
 namespace parser {
 	enum StatementType {
 		VARIABLE_DECLERATION,
@@ -25,7 +26,8 @@ namespace parser {
 	};
 
 	enum ExpressionType {
-		OperatorExpressionType,
+		TwoPartOperatorExpressionType,
+		IdentifierExpressionType,
 		FunctionCallExpressionType,
 	};
 
@@ -64,6 +66,11 @@ namespace parser {
 		std::vector<void*> expressions;
 	};
 
+	struct LiteralExpression {
+		Primitive type;
+		std::string value;
+	};
+
 	struct IdentifierExpression {
 		std::string identifier;
 	};
@@ -74,7 +81,7 @@ namespace parser {
 		ExpressionList expressions;
 	};
 
-	struct OperatorExpression {
+	struct TwoPartOperatorExpression {
 		Operator op;
 		Expression* left;
 		Expression* right;
@@ -102,13 +109,17 @@ namespace parser {
 		Token consume();
 		Token peek();
 		Token expect(TokenType type);
+		Token read_ahead();
 		bool ended();
 	};
-
 
 	std::vector<Statement> parse(std::vector<Token> tokens);
 	Statement parse_statement(Parser* parser);
 	Statement parse_type_statement(Parser* parser);
 	Statement parse_struct_statement(Parser* parser);
+	Expression* parse_function_call_expression(Parser* parser, Token identifier_token);
+	Expression* parse_identifier_expression(Parser* parser, Token identifier_token);
 	Type parse_type(Parser* parser);
+	Expression* parse_expression(Parser* parser);
+	Expression* parse_literal_expression(Parser* parser);
 }

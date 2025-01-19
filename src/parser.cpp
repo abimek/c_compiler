@@ -4,7 +4,15 @@
 #include <vector>
 #include <string>
 #include <optional>
+
 namespace parser {
+
+	Token Parser::read_ahead() {
+		Token token = tokens[index+1];
+		index++;
+		return token;
+	}
+
 	Token Parser::consume() {
 		Token token = tokens[index];
 		index++;
@@ -39,7 +47,7 @@ namespace parser {
 	Statement parse_statement(Parser* parser) {
 		switch(parser->peek().type){
 			case IDENTIFIER:
-				throw std::runtime_error("custom types currently not supported");
+				throw std::runtime_error("custom types currently not supported, but should be included as a type statement");
 				break;
 			case INT:
 			case FLOAT:
@@ -49,7 +57,6 @@ namespace parser {
 				return parse_struct_statement(parser);
 			default:
 				throw std::runtime_error("unexpected error");
-
 		}
 	}
 
@@ -61,7 +68,10 @@ namespace parser {
 		TokenType token_type = parser->peek().type;
 		if(token_type == EQUALS){
 				parser->consume();
-				//TODO: Parse Expression
+				Expression* expr = parse_expression(parser);
+				VariableDeclerationStatement* var = new VariableDeclerationStatement{type, identifier.content, expr};
+				Statement stmt = {VARIABLE_DECLERATION, var};
+				return stmt;
 		}
 		if(token_type == LCBRACKET){
 				parser->consume();
@@ -77,7 +87,7 @@ namespace parser {
 		throw std::runtime_error("Unexpected type");
 	}
 
-	//TODO: implement custom types
+	//TODO: implement custom types (strings/identifiers)
 	Type parse_type(Parser* parser) {
 		Token t_type = parser->consume();
 		Type type = {true, std::nullopt, ""};
@@ -97,6 +107,48 @@ namespace parser {
 				throw std::runtime_error("INVALID TYPE");
 		}
 		return type;
+	}
+
+
+
+	//parses an expression
+	//TODO: include strings
+	//TODO: add method calls on structs later
+	Expression* parse_expression(Parser* parser){
+		Expression* expr = expr;
+
+		Token token = parser->consume();
+		switch(token.type){
+			case INT_DATA:
+			case FLOAT_DATA:
+				expr = parse_literal_expression(parser);
+				break;
+			case IDENTIFIER:
+				if(parser->peek().type == LPAREN){
+					expr = parse_function_call_expression(parser, token);
+				} else {
+					expr = parse_identifier_expression(parser, token);
+				}
+				break;
+			default:
+				break;
+		}
+
+		Token next_t = parser->consume();
+		return expr;
+	}
+
+	Expression* parse_identifier_expression(Parser* parser, Token identifier_token){
+		return new Expression{IdentifierExpressionType, new IdentifierExpression{identifier_token.content}};
+	}
+
+
+	//TODO: Implement Func Call
+	Expression* parse_function_call_expression(Parser* parser, Token identifier_token){
+	}
+
+	Expression* parse_literal_expression(Parser* parser){
+		Token literal = parser->consume();
 	}
 
 	// this is called with the token paramter type being STRUCT

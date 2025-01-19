@@ -15,10 +15,10 @@ enum TokenType {
 	INT,
 	FLOAT,
 
-	//types
+	//types, actually holds the data
 	STRING,
 	INT_DATA,
-	FLOAT_DATA,
+	FLOAT_DATA, 
 
 	// brackets/Parenthesis
 	LPAREN,

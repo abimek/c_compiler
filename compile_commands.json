@@ -1,0 +1,15 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-I./inc",
+      "-c",
+      "-o",
+      "build/./src/parser.cpp.o",
+      "src/parser.cpp"
+    ],
+    "directory": "/home/abimek/CODE/C/ccompiler",
+    "file": "/home/abimek/CODE/C/ccompiler/src/parser.cpp",
+    "output": "/home/abimek/CODE/C/ccompiler/build/src/parser.cpp.o"
+  }
+]
