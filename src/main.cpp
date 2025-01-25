@@ -5,6 +5,9 @@
 #include <vector>
 #include <iostream>
 #include <string>
+
+using namespace lexer;
+
 void run_tests();
 
 int main(int argc, char *argv[]){
@@ -22,6 +25,7 @@ int main(int argc, char *argv[]){
 
 void run_tests() {
 	std::cout << std::endl << "Running Tests: " << std::endl << std::endl;
-	parser_testing::test_variable_decleration_no_initilization();
+	parser_testing::test_prefix();
 	parser_testing::test_struct_decleration();
+	parser_testing::test_variable_decleration_no_initilization();
 }

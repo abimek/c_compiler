@@ -55,6 +55,7 @@ namespace parser {
 			case lexer::INT:
 			case lexer::FLOAT:
 				return parse_type_statement(parser);
+				break;
 			case lexer::STRUCT:
 				return parse_struct_statement(parser);
 			default:
@@ -74,8 +75,8 @@ namespace parser {
 
 		// Parsing variable declerations (either with expresion or no expression)
 		switch(token_type){
-			case lexer::SEMICOLON:
 			case lexer::EQUALS:
+			case lexer::SEMICOLON:
 				return parse_variable_decleration(parser, type, identifier.content);
 			case lexer::LPAREN:
 				parser->consume();
@@ -92,16 +93,16 @@ namespace parser {
 	 */
 	Statement parse_variable_decleration(Parser* parser, Type type, std::string identifier){
 		if(parser->peek().type == lexer::EQUALS){
-			parser->consume();
-			Expression* expr = parse_expression(parser);
-			VariableDeclerationStatement* var = new VariableDeclerationStatement{type, identifier, expr};
-			Statement stmt = {VARIABLE_DECLERATION, var};
-			return stmt;
+				parser->consume();
+				Expression* expr = parse_expression(parser);
+				VariableDeclerationStatement* var = new VariableDeclerationStatement{type, identifier, expr};
+				Statement stmt = {VARIABLE_DECLERATION, var};
+				return stmt;
 		}
 		if(parser->peek().type == lexer::SEMICOLON){
-			VariableDeclerationStatement* var = new VariableDeclerationStatement{type, identifier, nullptr};
-			Statement stmt = {VARIABLE_DECLERATION, var};
-			return stmt;
+				VariableDeclerationStatement* var = new VariableDeclerationStatement{type, identifier, nullptr};
+				Statement stmt = {VARIABLE_DECLERATION, var};
+				return stmt;
 		}
 		throw std::runtime_error("Invalid variable decleration");
 	}
@@ -137,6 +138,7 @@ namespace parser {
 	 */
 	Expression* parse_expression(Parser* parser){
 		Expression* expr = expr;
+
 		switch(parser->peek().type){
 			case lexer::INT_DATA:
 			case lexer::FLOAT_DATA:
@@ -177,7 +179,6 @@ namespace parser {
 	}
 
 	Expression* parse_binary_expression(Parser* parser, Expression* left) {
-
 	}
 
 	/*
@@ -256,38 +257,20 @@ namespace ast_comparer {
 	}
 
 	bool prefix_expressions_equal(parser::PrefixExpression* expr1, parser::PrefixExpression* expr2){
-		return (expr1->prefix == expr2->prefix) && expressions_equal(expr1->expression, expr2->expression);
+		parser::IdentifierExpression* ident_expr1 = (parser::IdentifierExpression*)(expr1->expression);
+		parser::IdentifierExpression* ident_expr2 = (parser::IdentifierExpression*)(expr2->expression);
+		return (expr1->prefix == expr2->prefix) && identifier_expressions_equal(ident_expr1, ident_expr2);
 	}
 
 	//TODO: implement expression matching
 	bool expressions_equal(parser::Expression* expr1, parser::Expression* expr2) {
-		bool equal = false;
-		if(expr1 == nullptr && expr2 == nullptr){
-			return true;
-		}
-		if(expr1 && !expr2){
-			return false;
-		}
-		if(expr1->type != expr2->type){
-			return false;
-		}
 		switch(expr1->type){
-			case parser::IdentifierExpressionType:
-				{
-					parser::IdentifierExpression* ident_expr1 = (parser::IdentifierExpression*)(expr1->expression);
-					parser::IdentifierExpression* ident_expr2 = (parser::IdentifierExpression*)(expr2->expression);
-					equal = identifier_expressions_equal(ident_expr1, ident_expr2);
-				}
-				break;
 			case parser::PrefixExpressionType:
-				{
-					parser::PrefixExpression* pre_expr1 = (parser::PrefixExpression*)(expr1->expression);
-					parser::PrefixExpression* pre_expr2 = (parser::PrefixExpression*)(expr2->expression);
-					equal = prefix_expressions_equal(pre_expr1, pre_expr2);
-				}
-				break;
+				parser::PrefixExpression* pre_expr1 = (parser::PrefixExpression*)(expr1->expression);
+				parser::PrefixExpression* pre_expr2 = (parser::PrefixExpression*)(expr2->expression);
+				return prefix_expressions_equal(pre_expr1, pre_expr2);
 		}
-		return equal;
+		return false;
 	}
 
 	bool types_equal(parser::Type type1, parser::Type type2){
