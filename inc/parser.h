@@ -1,6 +1,10 @@
 #pragma once
 #include <optional>
+#include <string>
+#include <vector>
+#include "lexer.h"
 namespace parser_testing {
+	void test_function_call();
 	void test_variable_decleration_no_initilization();
 	void test_struct_decleration();
 	void test_prefix();
@@ -78,7 +82,7 @@ namespace parser {
 
 	struct ExpressionList {
 		int num;
-		std::vector<void*> expressions;
+		std::vector<Expression*> expressions;
 	};
 
 	struct LiteralExpression {
@@ -102,7 +106,6 @@ namespace parser {
 
 	struct FunctionCallExpression {
 		std::string identifier;
-		Type return_type;
 		ExpressionList expressions;
 	};
 
@@ -154,6 +157,7 @@ namespace parser {
 	Expression* parse_ident(Parser* parser);
 	Precedence infix_operator_to_precendence(InfixOperator op);
 	InfixOperator token_to_infix_operator(lexer::TokenType token_t);
+	ExpressionList parse_expression_list(Parser* parser);
 	Expression* parse_binary_expression(Parser* parser, Expression* left, Precedence precedence);
 }
 
@@ -164,5 +168,7 @@ namespace ast_comparer {
 	bool literal_expressions_equal(parser::LiteralExpression* expr1, parser::LiteralExpression* expr2);
 	bool binary_operator_expressions_equal(parser::BinaryOperatorExpression* expr1, parser::BinaryOperatorExpression* expr2);
 	bool types_equal(parser::Type type1, parser::Type type2);
+	bool function_call_expressions_equal(parser::FunctionCallExpression *expr1, parser::FunctionCallExpression *expr2);
+	bool expression_list_equal(parser::ExpressionList list1, parser::ExpressionList list2);
 }
 

@@ -1,5 +1,6 @@
 #include "parser.h"
 
+#include <cmath>
 #include <iterator>
 #include <optional>
 #include <ostream>
@@ -165,8 +166,14 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
 
   // we must first check to see if we reached a SEMICOLON so we can later read
   // the precedence of the next operator
-  if (parser->peek().type == lexer::SEMICOLON) {
-    return expr;
+  switch (parser->peek().type) {
+    case lexer::PLUS:
+    case lexer::MINUS:
+    case lexer::MULTIPLY:
+    case lexer::DIVIDE:
+      break;
+    default:
+      return expr;
   }
 
   Precedence next_prec = infix_operator_to_precendence(
@@ -181,16 +188,19 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
         expr = parse_binary_expression(parser, expr, precedence);
         break;
     }
-    if (parser->peek().type != lexer::SEMICOLON) {
-      next_prec = infix_operator_to_precendence(
-          token_to_infix_operator(parser->peek().type));
-    } else {
+    if (parser->peek().type == lexer::SEMICOLON) {
       break;
     }
+    next_prec = infix_operator_to_precendence(
+        token_to_infix_operator(parser->peek().type));
   }
   return expr;
 }
 
+/*
+ * Parse a binary expression such as addition or multiplication, handles the
+ * appropriate opperator precedence
+ */
 Expression *parse_binary_expression(Parser *parser, Expression *left,
                                     Precedence precedence) {
   InfixOperator op = token_to_infix_operator(parser->consume().type);
@@ -200,6 +210,10 @@ Expression *parse_binary_expression(Parser *parser, Expression *left,
       new BinaryOperatorExpression{op, left, parse_expression(parser, prec)}};
 }
 
+/*
+ * Utility function that turns a token to an ifnix operators
+ * TODO: Move to a utilities file later
+ */
 InfixOperator token_to_infix_operator(lexer::TokenType token_t) {
   switch (token_t) {
     case lexer::PLUS:
@@ -215,6 +229,10 @@ InfixOperator token_to_infix_operator(lexer::TokenType token_t) {
   }
 }
 
+/*
+ * Turns and InfixOperator to it's Precedence
+ * TODO: Move to a utitlies file later
+ */
 Precedence infix_operator_to_precendence(InfixOperator op) {
   switch (op) {
     case InfixOperator::ADDITION:
@@ -274,13 +292,14 @@ Expression *parse_literal_expression(Parser *parser) {
 }
 
 /*
- * Parses somethign that begins with an identifier
+ * Parses somethign that begins with an identifier, might also parser the (.)
+ * construct
  */
 Expression *parse_ident(Parser *parser) {
   lexer::Token identifier = parser->consume();
   switch (parser->peek().type) {
     case lexer::LPAREN:
-      // return / parse function
+      return parse_function_call_expression(parser, identifier);
     default:
       return parse_identifier_expression(parser, identifier);
   }
@@ -298,16 +317,39 @@ Expression *parse_identifier_expression(Parser *parser,
 
 // TODO: Implement Func Call
 Expression *parse_function_call_expression(Parser *parser,
-                                           lexer::Token identifier_token) {}
+                                           lexer::Token identifier_token) {
+  ExpressionList expr_list = parse_expression_list(parser);
+  parser->expect(lexer::RPAREN);
+  return new Expression{
+      FunctionCallExpressionType,
+      new FunctionCallExpression{identifier_token.content, expr_list}};
+}
+
+ExpressionList parse_expression_list(Parser *parser) {
+  parser->expect(lexer::LPAREN);
+  ExpressionList expr_list = ExpressionList{};
+  while (parser->peek().type != lexer::RPAREN) {
+    expr_list.num += 1;
+    expr_list.expressions.push_back(
+        parse_expression(parser, Precedence::Lowest));
+    if (parser->peek().type != lexer::RPAREN) {
+      parser->expect(lexer::COMMA);
+    }
+  }
+  return expr_list;
+}
 
 // this is called with the token paramter type being STRUCT
 Statement parse_struct_statement(Parser *parser) {
   parser->consume();
   lexer::Token struct_name = parser->expect(lexer::IDENTIFIER);
+
   StructDeclerationStatement *struct_t =
       new StructDeclerationStatement{0, struct_name.content, {}, {}};
+
   Statement stmt = {STRUCT_DECLERATION, struct_t};
   parser->expect(lexer::LCBRACKET);
+
   while (parser->peek().type != lexer::RCBRACKET) {
     Type param_type = parse_type(parser);
     lexer::Token param_name = parser->expect(lexer::IDENTIFIER);
@@ -316,6 +358,7 @@ Statement parse_struct_statement(Parser *parser) {
     struct_t->identifiers.push_back(param_name.content);
     struct_t->member_count++;
   }
+
   parser->expect(lexer::RCBRACKET);
   return stmt;
 }
@@ -330,6 +373,25 @@ bool binary_operator_expressions_equal(
   return (expr1->op == expr2->op) &&
          expressions_equal(expr1->left, expr2->left) &&
          expressions_equal(expr1->right, expr2->right);
+}
+
+bool expression_list_equal(parser::ExpressionList list1,
+                           parser::ExpressionList list2) {
+  if (list1.num != list2.num) {
+    return false;
+  }
+  for (int i = 0; i < list1.expressions.size(); i++) {
+    if (!expressions_equal(list1.expressions[i], list2.expressions[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool function_call_expressions_equal(parser::FunctionCallExpression *expr1,
+                                     parser::FunctionCallExpression *expr2) {
+  return (expr1->identifier == expr2->identifier) &&
+         expression_list_equal(expr1->expressions, expr2->expressions);
 }
 
 bool identifier_expressions_equal(parser::IdentifierExpression *expr1,
@@ -387,6 +449,13 @@ bool expressions_equal(parser::Expression *expr1, parser::Expression *expr2) {
       parser::LiteralExpression *lit_expr2 =
           (parser::LiteralExpression *)(expr2->expression);
       equal = literal_expressions_equal(lit_expr1, lit_expr2);
+    } break;
+    case parser::FunctionCallExpressionType: {
+      parser::FunctionCallExpression *func_expr1 =
+          (parser::FunctionCallExpression *)(expr1->expression);
+      parser::FunctionCallExpression *func_expr2 =
+          (parser::FunctionCallExpression *)(expr2->expression);
+      equal = function_call_expressions_equal(func_expr1, func_expr2);
     } break;
     case parser::BinaryOperatorExpressionType: {
       parser::BinaryOperatorExpression *bin_expr1 =
@@ -547,6 +616,38 @@ void test_prefix() {
   bool suceeded = ast_comparer::programs_equal(
       validation_program, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_prefix: " << bool_to_status(suceeded) << std::endl;
+}
+
+void test_function_call() {
+  std::string sourcecode = "int myint = -test(yay, test);";
+
+  std::vector<parser::Statement> validation_program;
+  parser::VariableDeclerationStatement *decl_stmt =
+      new parser::VariableDeclerationStatement{
+          parser::Type{true, parser::Type::INT_T, ""}, "myint",
+          new parser::Expression{
+              parser::PrefixExpressionType,
+              new parser::PrefixExpression{
+                  parser::PrefixOp::MINUS,
+                  new parser::Expression{
+                      parser::FunctionCallExpressionType,
+                      new parser::FunctionCallExpression{
+                          "test",
+                          parser::ExpressionList{
+                              2,
+                              {new parser::Expression{
+                                   parser::IdentifierExpressionType,
+                                   new parser::IdentifierExpression{"yay"}},
+                               new parser::Expression{
+                                   parser::IdentifierExpressionType,
+                                   new parser::IdentifierExpression{
+                                       "test"}}}}}}}}};
+  validation_program.push_back(
+      parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
+  bool suceeded = ast_comparer::programs_equal(
+      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+  std::cout << "test test_function_call: " << bool_to_status(suceeded)
+            << std::endl;
 }
 
 void test_operator_precedence() {

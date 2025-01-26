@@ -35,4 +35,5 @@ void run_tests() {
   parser_testing::test_literal();
   parser_testing::test_add();
   parser_testing::test_operator_precedence();
+  parser_testing::test_function_call();
 }
