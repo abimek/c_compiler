@@ -4,6 +4,10 @@ namespace parser_testing {
 	void test_variable_decleration_no_initilization();
 	void test_struct_decleration();
 	void test_prefix();
+	void test_literal();
+	void test_add();
+	void test_should_fail();
+	void test_operator_precedence();
 }
 
 namespace parser {
@@ -35,8 +39,15 @@ namespace parser {
 		PrefixExpressionType
 	};
 
+
+	enum Precedence {
+		Lowest, // Lowest Precendence, initally passed
+		Term, // Addition Subtraction
+		Factor // Multiplication, Division
+	};
+
 	// Ran on expressions
-	enum Operator {
+	enum InfixOperator {
 		ADDITION,
 		SUBTRACTION,
 		DIVISION,
@@ -79,13 +90,13 @@ namespace parser {
 		std::string identifier;
 	};
 
-	enum Prefix {
-		PLUS_PREFIX,
-		MINUS_PREFIX
+	enum PrefixOp {
+		PLUS,
+		MINUS
 	};
 
 	struct PrefixExpression {
-		Prefix prefix;
+		PrefixOp prefix;
 		Expression* expression;
 	};
 
@@ -96,7 +107,7 @@ namespace parser {
 	};
 
 	struct BinaryOperatorExpression {
-		Operator op;
+		InfixOperator op;
 		Expression* left;
 		Expression* right;
 	};
@@ -136,17 +147,22 @@ namespace parser {
 	Expression* parse_function_call_expression(Parser* parser, lexer::Token identifier_token);
 	Expression* parse_identifier_expression(Parser* parser, lexer::Token identifier_token);
 	Type parse_type(Parser* parser);
-	Expression* parse_expression(Parser* parser);
+	Expression* parse_expression(Parser* parser, Precedence precedence);
 	Expression* parse_literal_expression(Parser* parser);
 	Expression* parse_prefix(Parser* parser);
-	Prefix token_to_prefix(lexer::Token token);
+	PrefixOp token_to_prefix(lexer::Token token);
 	Expression* parse_ident(Parser* parser);
+	Precedence infix_operator_to_precendence(InfixOperator op);
+	InfixOperator token_to_infix_operator(lexer::TokenType token_t);
+	Expression* parse_binary_expression(Parser* parser, Expression* left, Precedence precedence);
 }
 
 namespace ast_comparer {
 	bool expressions_equal(parser::Expression* expr1, parser::Expression* expr2);
 	bool prefix_expressions_equal(parser::PrefixExpression* expr1, parser::PrefixExpression* expr2);
 	bool identifier_expressions_equal(parser::IdentifierExpression* expr1, parser::IdentifierExpression* expr2);
+	bool literal_expressions_equal(parser::LiteralExpression* expr1, parser::LiteralExpression* expr2);
+	bool binary_operator_expressions_equal(parser::BinaryOperatorExpression* expr1, parser::BinaryOperatorExpression* expr2);
 	bool types_equal(parser::Type type1, parser::Type type2);
 }
 

@@ -1,3 +1,4 @@
+#include <execution>
 #include <fstream>
 #include <streambuf>
 #include "lexer.h"
@@ -25,7 +26,11 @@ int main(int argc, char *argv[]){
 
 void run_tests() {
 	std::cout << std::endl << "Running Tests: " << std::endl << std::endl;
+	parser_testing::test_should_fail();
 	parser_testing::test_prefix();
 	parser_testing::test_struct_decleration();
 	parser_testing::test_variable_decleration_no_initilization();
+	parser_testing::test_literal();
+	parser_testing::test_add();
+	parser_testing::test_operator_precedence();
 }

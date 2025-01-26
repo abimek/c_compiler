@@ -1,5 +1,7 @@
 #include "lexer.h"
 #include "parser.h"
+#include <iterator>
+#include <ostream>
 #include <stdexcept>
 #include <vector>
 #include <string>
@@ -93,7 +95,7 @@ namespace parser {
 	Statement parse_variable_decleration(Parser* parser, Type type, std::string identifier){
 		if(parser->peek().type == lexer::EQUALS){
 			parser->consume();
-			Expression* expr = parse_expression(parser);
+			Expression* expr = parse_expression(parser, Precedence::Lowest);
 			VariableDeclerationStatement* var = new VariableDeclerationStatement{type, identifier, expr};
 			Statement stmt = {VARIABLE_DECLERATION, var};
 			return stmt;
@@ -134,8 +136,12 @@ namespace parser {
 
 	/*
 	 * This parses a function using a Pratt Parser (hopefully)
+	 *
+	 * 5*5+5+3*2
+	 * (5*5) + (5+3*2)
+	 * (5*5) + (5 + (3*2))
 	 */
-	Expression* parse_expression(Parser* parser){
+	Expression* parse_expression(Parser* parser, Precedence precedence){
 		Expression* expr = expr;
 		switch(parser->peek().type){
 			case lexer::INT_DATA:
@@ -148,20 +154,79 @@ namespace parser {
 				expr = parse_prefix(parser);
 				break;
 			case lexer::IDENTIFIER:
+				//TODO: Should also attempt to parse a parameter call / read
 				expr = parse_ident(parser);
 				break;
 			default:
 				break;
 		}
+
+		// we must first check to see if we reached a SEMICOLON so we can later read
+		// the precedence of the next operator
+		if(parser->peek().type == lexer::SEMICOLON){
+			return expr;
+		}
+
+		Precedence next_prec = infix_operator_to_precendence(token_to_infix_operator(parser->peek().type));
+
+		while(next_prec >= precedence){
+			switch(parser->peek().type){
+				case lexer::PLUS:
+				case lexer::MINUS:
+				case lexer::MULTIPLY:
+				case lexer::DIVIDE:
+					expr = parse_binary_expression(parser, expr,precedence);
+					break;
+			}
+			if(parser->peek().type != lexer::SEMICOLON){
+				next_prec = infix_operator_to_precendence(token_to_infix_operator(parser->peek().type));
+			}else{
+				break;
+			}
+		}
 		return expr;
 	}
 
-	Prefix token_to_prefix(lexer::Token token) {
+	Expression* parse_binary_expression(Parser* parser, Expression* left, Precedence precedence) {
+		InfixOperator op = token_to_infix_operator(parser->consume().type);
+		Precedence prec = infix_operator_to_precendence(op);
+		return new Expression{BinaryOperatorExpressionType, new BinaryOperatorExpression{op, left, parse_expression(parser, prec)}};
+	}
+
+	InfixOperator token_to_infix_operator(lexer::TokenType token_t){
+		switch(token_t){
+			case lexer::PLUS:
+				return InfixOperator::ADDITION;
+			case lexer::MINUS:
+				return InfixOperator::SUBTRACTION;
+			case lexer::MULTIPLY:
+				return InfixOperator::MULTIPLICATION;
+			case lexer::DIVIDE:
+				return InfixOperator::DIVISION;
+			default:
+				throw std::runtime_error("Unepxect infix opeartor");
+		}
+	}
+
+	Precedence infix_operator_to_precendence(InfixOperator op){
+		switch(op){
+			case InfixOperator::ADDITION:
+			case InfixOperator::SUBTRACTION:
+				return Precedence::Term;
+			case InfixOperator::MULTIPLICATION:
+			case InfixOperator::DIVISION:
+				return Precedence::Factor;
+			default:
+				throw std::runtime_error("Unexpected Infix Operator To Precedance Conversion");
+		}
+	}
+
+	PrefixOp token_to_prefix(lexer::Token token) {
 		switch (token.type){
 			case lexer::PLUS:
-				return Prefix::PLUS_PREFIX;
+				return PrefixOp::PLUS;
 			case lexer::MINUS:
-				return Prefix::MINUS_PREFIX;
+				return PrefixOp::MINUS;
 			default:
 				throw std::runtime_error("Unexpected prefix: " + lexer::token_type_to_string(token.type));
 		}
@@ -172,13 +237,10 @@ namespace parser {
 	 */
 	Expression* parse_prefix(Parser* parser){
 		lexer::Token prefix = parser->consume();
-		Expression* expr = parse_expression(parser);
+		Expression* expr = parse_expression(parser, Precedence::Lowest);
 		return new Expression{PrefixExpressionType, new PrefixExpression{token_to_prefix(prefix), expr}};
 	}
 
-	Expression* parse_binary_expression(Parser* parser, Expression* left) {
-
-	}
 
 	/*
 	 * Parses a literal / primitive (Integer, Float, soon to be string)
@@ -251,10 +313,18 @@ namespace parser {
 //compares two dfifferent ast's
 namespace ast_comparer {
 
+	bool binary_operator_expressions_equal(parser::BinaryOperatorExpression* expr1, parser::BinaryOperatorExpression* expr2){
+		return (expr1->op == expr2->op) && expressions_equal(expr1->left, expr2->left) && expressions_equal(expr1->right, expr2->right);
+	}
+
 	bool identifier_expressions_equal(parser::IdentifierExpression* expr1, parser::IdentifierExpression* expr2){
 		return (expr1->identifier == expr2->identifier);
 	}
 
+	bool literal_expressions_equal(parser::LiteralExpression* expr1, parser::LiteralExpression* expr2){
+		return (expr1->type == expr2->type) && (expr1->value == expr2->value);
+	}
+	
 	bool prefix_expressions_equal(parser::PrefixExpression* expr1, parser::PrefixExpression* expr2){
 		return (expr1->prefix == expr2->prefix) && expressions_equal(expr1->expression, expr2->expression);
 	}
@@ -265,7 +335,13 @@ namespace ast_comparer {
 		if(expr1 == nullptr && expr2 == nullptr){
 			return true;
 		}
-		if(expr1 && !expr2){
+		if(expr1->expression == nullptr && expr2->expression == nullptr){
+			return true;
+		}
+		if(!(expr1 != nullptr && expr2 != nullptr)){
+			return false;
+		}
+		if(!(expr1->expression != nullptr && expr2->expression != nullptr)){
 			return false;
 		}
 		if(expr1->type != expr2->type){
@@ -284,6 +360,20 @@ namespace ast_comparer {
 					parser::PrefixExpression* pre_expr1 = (parser::PrefixExpression*)(expr1->expression);
 					parser::PrefixExpression* pre_expr2 = (parser::PrefixExpression*)(expr2->expression);
 					equal = prefix_expressions_equal(pre_expr1, pre_expr2);
+				}
+				break;
+			case parser::LiteralExpressionType:
+				{
+					parser::LiteralExpression* lit_expr1 = (parser::LiteralExpression*)(expr1->expression);
+					parser::LiteralExpression* lit_expr2 = (parser::LiteralExpression*)(expr2->expression);
+					equal = literal_expressions_equal(lit_expr1, lit_expr2);
+				}
+				break;
+			case parser::BinaryOperatorExpressionType:
+				{
+					parser::BinaryOperatorExpression* bin_expr1 = (parser::BinaryOperatorExpression*)(expr1->expression);
+					parser::BinaryOperatorExpression* bin_expr2 = (parser::BinaryOperatorExpression*)(expr2->expression);
+					equal = binary_operator_expressions_equal(bin_expr1, bin_expr2);
 				}
 				break;
 		}
@@ -330,19 +420,19 @@ namespace ast_comparer {
 		if(stmt1.type != stmt2.type){
 			return false;
 		}
-		bool equal = true;
+		bool equal = false;
 		switch(stmt1.type){
 			case parser::VARIABLE_DECLERATION:
 				{
 					parser::VariableDeclerationStatement* decl_stmt1 = (parser::VariableDeclerationStatement*)(stmt1.statement);
-					parser::VariableDeclerationStatement* decl_stmt2 = (parser::VariableDeclerationStatement*)(stmt1.statement);
+					parser::VariableDeclerationStatement* decl_stmt2 = (parser::VariableDeclerationStatement*)(stmt2.statement);
 					equal = variable_declerations_equal(decl_stmt1, decl_stmt2);
 				}
 				break;
 			case parser::STRUCT_DECLERATION:
 				{
 					parser::StructDeclerationStatement* decl_stmt1 = (parser::StructDeclerationStatement*)(stmt1.statement);
-					parser::StructDeclerationStatement* decl_stmt2 = (parser::StructDeclerationStatement*)(stmt1.statement);
+					parser::StructDeclerationStatement* decl_stmt2 = (parser::StructDeclerationStatement*)(stmt2.statement);
 					equal = struct_declerations_equal(decl_stmt1, decl_stmt2);
 				}
 				break;
@@ -371,6 +461,40 @@ namespace parser_testing {
 		return "failed";
 	}
 
+	void test_should_fail(){
+		std::string sourcecode = "int myint = -6;";
+
+		std::vector<parser::Statement> validation_program;
+		parser::VariableDeclerationStatement* decl_stmt = new parser::VariableDeclerationStatement{
+			parser::Type{true, parser::Type::INT_T, ""},
+			"myint",
+			new parser::Expression{
+				parser::PrefixExpressionType,
+				nullptr
+			}
+		};
+		validation_program.push_back(parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
+		bool suceeded = ast_comparer::programs_equal(validation_program, parser::parse(lexer::tokenize(sourcecode)));
+		std::cout << "test should_fail: " << bool_to_status(suceeded) << std::endl;
+	}
+
+	void test_literal(){
+		std::string sourcecode = "int myint = -5;";
+
+		std::vector<parser::Statement> validation_program;
+		parser::VariableDeclerationStatement* decl_stmt = new parser::VariableDeclerationStatement{
+			parser::Type{true, parser::Type::INT_T, ""},
+			"myint",
+			new parser::Expression{
+				parser::PrefixExpressionType,
+				new parser::PrefixExpression{parser::PrefixOp::MINUS, new parser::Expression{parser::LiteralExpressionType, new parser::LiteralExpression{parser::Type::INT_T, "5"}}}
+			}
+		};
+		validation_program.push_back(parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
+		bool suceeded = ast_comparer::programs_equal(validation_program, parser::parse(lexer::tokenize(sourcecode)));
+		std::cout << "test literal: " << bool_to_status(suceeded) << std::endl;
+	}
+
 	void test_prefix(){
 		std::string sourcecode = "int myint = -test;";
 
@@ -380,7 +504,7 @@ namespace parser_testing {
 			"myint",
 			new parser::Expression{
 				parser::PrefixExpressionType,
-				new parser::PrefixExpression{parser::MINUS_PREFIX, new parser::Expression{parser::IdentifierExpressionType, new parser::IdentifierExpression{"test"}}}
+				new parser::PrefixExpression{parser::PrefixOp::MINUS, new parser::Expression{parser::IdentifierExpressionType, new parser::IdentifierExpression{"test"}}}
 			}
 		};
 		validation_program.push_back(parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
@@ -388,6 +512,103 @@ namespace parser_testing {
 		std::cout << "test test_prefix: " << bool_to_status(suceeded) << std::endl;
 	}
 
+	void test_operator_precedence(){
+		std::string sourcecode = "int myint = 5*5+5+5*6;";
+
+		std::vector<parser::Statement> validation_program;
+		parser::VariableDeclerationStatement* decl_stmt = new parser::VariableDeclerationStatement{
+			parser::Type{true, parser::Type::INT_T, ""},
+			"myint",
+			new parser::Expression{
+				parser::BinaryOperatorExpressionType,
+				new parser::BinaryOperatorExpression{
+					parser::InfixOperator::ADDITION, 
+					new parser::Expression{
+						parser::BinaryOperatorExpressionType, 
+						new parser::BinaryOperatorExpression{
+							parser::InfixOperator::MULTIPLICATION, 
+							new parser::Expression{
+								parser::LiteralExpressionType, 
+								new parser::LiteralExpression{
+									parser::Type::INT_T, "5"
+								}
+							},
+							new parser::Expression{
+								parser::LiteralExpressionType, 
+								new parser::LiteralExpression{
+									parser::Type::INT_T, "5"
+								}
+							}
+						}
+					},
+					new parser::Expression{
+						parser::BinaryOperatorExpressionType, 
+						new parser::BinaryOperatorExpression{
+							parser::InfixOperator::ADDITION, 
+							new parser::Expression{
+								parser::LiteralExpressionType, 
+								new parser::LiteralExpression{
+									parser::Type::INT_T, "5"
+								}
+							},
+							new parser::Expression{
+								parser::BinaryOperatorExpressionType, 
+								new parser::BinaryOperatorExpression{
+									parser::InfixOperator::MULTIPLICATION, 
+									new parser::Expression{
+										parser::LiteralExpressionType, 
+										new parser::LiteralExpression{
+											parser::Type::INT_T, "5"
+										}
+									},
+									new parser::Expression{
+										parser::LiteralExpressionType, 
+										new parser::LiteralExpression{
+											parser::Type::INT_T, "6"
+										}
+									}
+								}
+							}
+						}
+					},
+				}
+			}
+		};
+		validation_program.push_back(parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
+		bool suceeded = ast_comparer::programs_equal(validation_program, parser::parse(lexer::tokenize(sourcecode)));
+		std::cout << "test test_operator_precedence: " << bool_to_status(suceeded) << std::endl;
+	}
+
+	void test_add(){
+		std::string sourcecode = "int myint = 5+5;";
+		std::vector<parser::Statement> validation_program;
+		parser::VariableDeclerationStatement* decl_stmt = new parser::VariableDeclerationStatement{
+			parser::Type{true, parser::Type::INT_T, ""},
+			"myint",
+			new parser::Expression{
+				parser::BinaryOperatorExpressionType,
+				new parser::BinaryOperatorExpression{
+					parser::InfixOperator::ADDITION, 
+					new parser::Expression{
+						parser::LiteralExpressionType, 
+						new parser::LiteralExpression{
+							parser::Type::INT_T, "5"
+						}
+					},
+					new parser::Expression{
+						parser::LiteralExpressionType, 
+						new parser::LiteralExpression{
+							parser::Type::INT_T, "5"
+						}
+					}
+				}
+			}
+		};
+		validation_program.push_back(parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
+		bool suceeded = ast_comparer::programs_equal(validation_program, parser::parse(lexer::tokenize(sourcecode)));
+		std::cout << "test test_add: " << bool_to_status(suceeded) << std::endl;
+	}
+	
 	void test_variable_decleration_no_initilization(){
 		std::string sourcecode = "int myint;";
 
