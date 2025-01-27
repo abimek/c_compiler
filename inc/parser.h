@@ -60,6 +60,7 @@ namespace parser {
 
 	struct FunctionStatement {
 		std::string identifier;
+		Type return_type;
 		Parameters parameters;
 		std::vector<Statement> statements;
 	};
@@ -148,4 +149,7 @@ namespace parser {
 	InfixOperator token_to_infix_operator(lexer::TokenType token_t);
 	ExpressionList parse_expression_list(Parser* parser);
 	Expression* parse_binary_expression(Parser* parser, Expression* left, Precedence precedence);
+	std::vector<Statement> parse_statements(Parser *parser);
+	Statement parse_function_statement(Parser *parser, Type type, lexer::Token identifier);
+	Parameters parse_function_parameters(Parser *parser);
 }

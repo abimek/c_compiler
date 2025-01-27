@@ -1,7 +1,9 @@
-#include <vector>
-#include "lexer.h"
-#include <string>
 #include "parser.h"
+
+#include <string>
+#include <vector>
+
+#include "lexer.h"
 #include "parser_test.h"
 
 namespace parser_testing {
@@ -183,6 +185,25 @@ void test_add() {
   std::cout << "test test_add: " << bool_to_status(suceeded) << std::endl;
 }
 
+void test_function_statement() {
+  std::string sourcecode = "int myint(int myint){}";
+
+  std::vector<parser::Statement> validation_program;
+
+  parser::FunctionStatement *func_stmt = new parser::FunctionStatement{
+      "myint",
+      parser::Type{true, parser::Type::INT_T, ""},
+      parser::Parameters{
+          1, {parser::Type{true, parser::Type::INT_T, ""}}, {"myint"}},
+      {}};
+
+  validation_program.push_back(parser::Statement{parser::FUNCTION, func_stmt});
+  bool suceeded = ast_comparer::programs_equal(
+      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+  std::cout << "test function_decleration: " << bool_to_status(suceeded)
+            << std::endl;
+}
+
 void test_variable_decleration_no_initilization() {
   std::string sourcecode = "int myint;";
 
@@ -231,7 +252,6 @@ void test_struct_decleration() {
 
 void test_prefix_expression() {}
 }  // namespace parser_testing
-
 
 /*
  * This is where the AST Comparison code is contained, used for validating the
@@ -387,6 +407,20 @@ bool struct_declerations_equal(parser::StructDeclerationStatement *decl1,
          string_vector_equal(decl1->identifiers, decl2->identifiers);
 }
 
+bool parameters_equal(parser::Parameters param1, parser::Parameters param2) {
+  return (param1.num == param2.num) &&
+         type_vector_equal(param1.types, param2.types) &&
+         string_vector_equal(param1.vars, param2.vars);
+}
+
+bool function_declerations_equal(parser::FunctionStatement *func1,
+                                 parser::FunctionStatement *func2) {
+  return (func1->identifier == func2->identifier) &&
+         types_equal(func1->return_type, func2->return_type) &&
+         parameters_equal(func1->parameters, func2->parameters) &&
+         programs_equal(func1->statements, func2->statements);
+}
+
 bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
   if (stmt1.type != stmt2.type) {
     return false;
@@ -406,6 +440,13 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
       parser::StructDeclerationStatement *decl_stmt2 =
           (parser::StructDeclerationStatement *)(stmt2.statement);
       equal = struct_declerations_equal(decl_stmt1, decl_stmt2);
+    } break;
+    case parser::FUNCTION: {
+      parser::FunctionStatement *func_stmt1 =
+          (parser::FunctionStatement *)(stmt1.statement);
+      parser::FunctionStatement *func_stmt2 =
+          (parser::FunctionStatement *)(stmt2.statement);
+      equal = function_declerations_equal(func_stmt1, func_stmt2);
     } break;
   }
   return equal;

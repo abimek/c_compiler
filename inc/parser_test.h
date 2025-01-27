@@ -9,6 +9,7 @@ namespace parser_testing {
 	void test_add();
 	void test_should_fail();
 	void test_operator_precedence();
+	void test_function_statement();
 }
 
 
@@ -22,5 +23,7 @@ namespace ast_comparer {
 	bool function_call_expressions_equal(parser::FunctionCallExpression *expr1, parser::FunctionCallExpression *expr2);
 	bool expression_list_equal(parser::ExpressionList list1, parser::ExpressionList list2);
 	bool programs_equal(std::vector<parser::Statement> ast1, std::vector<parser::Statement> ast2);
+	bool parameters_equal(parser::Parameters param1, parser::Parameters param2);
+	bool function_declerations_equal(parser::FunctionStatement *func1, parser::FunctionStatement *func2);
 }
 

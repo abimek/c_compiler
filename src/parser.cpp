@@ -44,12 +44,19 @@ bool Parser::ended() { return index >= tokens.size(); }
  */
 std::vector<Statement> parse(std::vector<lexer::Token> tokens) {
   Parser parser = {0, tokens};
-  while (!parser.ended()) {
-    Statement statement = parse_statement(&parser);
-    parser.expect(lexer::SEMICOLON);
-    parser.program.push_back(statement);
-  }
+  std::vector<Statement> program_statements = parse_statements(&parser);
+  parser.program.insert(parser.program.end(), program_statements.begin(),
+                        program_statements.end());
   return parser.program;
+}
+
+std::vector<Statement> parse_statements(Parser *parser) {
+  std::vector<Statement> statements = {};
+  while (!parser->ended() && parser->peek().type != lexer::RCBRACKET) {
+    Statement statement = parse_statement(parser);
+    statements.push_back(statement);
+  }
+  return statements;
 }
 
 // This parses a statement
@@ -81,11 +88,37 @@ Statement parse_type_statement(Parser *parser) {
     case lexer::EQUALS:
       return parse_variable_decleration(parser, type, identifier.content);
     case lexer::LPAREN:
-      parser->consume();
-      // TODO: Parse Function
+      return parse_function_statement(parser, type, identifier);
     default:
-      throw std::runtime_error("Unexpected type");
+      throw std::runtime_error("Unexpected token");
   }
+}
+
+Statement parse_function_statement(Parser *parser, Type return_type,
+                                   lexer::Token identifier) {
+  Parameters params = parse_function_parameters(parser);
+  parser->expect(lexer::LCBRACKET);
+  std::vector<Statement> statements = parse_statements(parser);
+  parser->expect(lexer::RCBRACKET);
+  return parser::Statement{
+      parser::StatementType::FUNCTION,
+      new parser::FunctionStatement{identifier.content, return_type, params,
+                                    statements}};
+}
+
+Parameters parse_function_parameters(Parser *parser) {
+  parser->expect(lexer::LPAREN);
+  Parameters params = Parameters{0, {}, {}};
+  while (parser->peek().type != lexer::RPAREN) {
+    params.num += 1;
+    params.types.push_back(parse_type(parser));
+    params.vars.push_back(parser->expect(lexer::IDENTIFIER).content);
+    if (parser->peek().type == lexer::COMMA) {
+      parser->consume();
+    }
+  }
+  parser->expect(lexer::RPAREN);
+  return params;
 }
 
 /*
@@ -101,12 +134,14 @@ Statement parse_variable_decleration(Parser *parser, Type type,
     VariableDeclerationStatement *var =
         new VariableDeclerationStatement{type, identifier, expr};
     Statement stmt = {VARIABLE_DECLERATION, var};
+    parser->expect(lexer::SEMICOLON);
     return stmt;
   }
   if (parser->peek().type == lexer::SEMICOLON) {
     VariableDeclerationStatement *var =
         new VariableDeclerationStatement{type, identifier, nullptr};
     Statement stmt = {VARIABLE_DECLERATION, var};
+    parser->expect(lexer::SEMICOLON);
     return stmt;
   }
   throw std::runtime_error("Invalid variable decleration");
@@ -315,7 +350,9 @@ Expression *parse_identifier_expression(Parser *parser,
                         new IdentifierExpression{identifier_token.content}};
 }
 
-// TODO: Implement Func Call
+/*
+ * Parses a function call expression
+ */
 Expression *parse_function_call_expression(Parser *parser,
                                            lexer::Token identifier_token) {
   ExpressionList expr_list = parse_expression_list(parser);
@@ -360,7 +397,7 @@ Statement parse_struct_statement(Parser *parser) {
   }
 
   parser->expect(lexer::RCBRACKET);
+  parser->expect(lexer::SEMICOLON);
   return stmt;
 }
 }  // namespace parser
-
