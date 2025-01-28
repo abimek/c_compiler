@@ -197,18 +197,18 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
       break;
   }
 
-	while(true){
-		if(!is_operator_token(parser->peek().type)){
-			break;
-		}
-		Precedence next_prec = infix_operator_to_precendence(
-				token_to_infix_operator(parser->peek().type));
-		if(next_prec < precedence){
-			break;
-		}
-		// Switchs operator token operations
+  while (true) {
+    if (!is_operator_token(parser->peek().type)) {
+      break;
+    }
+    Precedence next_prec = infix_operator_to_precendence(
+        token_to_infix_operator(parser->peek().type));
+    if (next_prec < precedence) {
+      break;
+    }
+    // Switchs operator token operations
     switch (parser->peek().type) {
-			// Anything being added here should also be added to is_operator_token
+        // Anything being added here should also be added to is_operator_token
       case lexer::PLUS:
       case lexer::MINUS:
       case lexer::MULTIPLY:
@@ -216,7 +216,7 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
         expr = parse_binary_expression(parser, expr, precedence);
         break;
     }
-	}
+  }
   return expr;
 }
 
@@ -233,16 +233,16 @@ Expression *parse_binary_expression(Parser *parser, Expression *left,
       new BinaryOperatorExpression{op, left, parse_expression(parser, prec)}};
 }
 
-bool is_operator_token(lexer::TokenType token_type){
-    switch (token_type){
-      case lexer::PLUS:
-      case lexer::MINUS:
-      case lexer::MULTIPLY:
-      case lexer::DIVIDE:
-				return true;
-			default:
-				return false;
-    }
+bool is_operator_token(lexer::TokenType token_type) {
+  switch (token_type) {
+    case lexer::PLUS:
+    case lexer::MINUS:
+    case lexer::MULTIPLY:
+    case lexer::DIVIDE:
+      return true;
+    default:
+      return false;
+  }
 }
 
 /*
