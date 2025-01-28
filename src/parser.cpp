@@ -1,12 +1,12 @@
 #include "parser.h"
+#include "lexer.h"
+#include "utils.h"
 
 #include <cmath>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-#include "lexer.h"
 
 namespace parser {
 
@@ -198,11 +198,11 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
   }
 
   while (true) {
-    if (!is_operator_token(parser->peek().type)) {
+    if (!utils::is_operator_token(parser->peek().type)) {
       break;
     }
-    Precedence next_prec = infix_operator_to_precendence(
-        token_to_infix_operator(parser->peek().type));
+    Precedence next_prec = utils::infix_operator_to_precendence(
+        utils::token_to_infix_operator(parser->peek().type));
     if (next_prec < precedence) {
       break;
     }
@@ -215,6 +215,8 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
       case lexer::DIVIDE:
         expr = parse_binary_expression(parser, expr, precedence);
         break;
+			default:
+				throw std::runtime_error("Unexpected binary operator");
     }
   }
   return expr;
@@ -226,73 +228,14 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
  */
 Expression *parse_binary_expression(Parser *parser, Expression *left,
                                     Precedence precedence) {
-  InfixOperator op = token_to_infix_operator(parser->consume().type);
-  Precedence prec = infix_operator_to_precendence(op);
+  InfixOperator op = utils::token_to_infix_operator(parser->consume().type);
+  Precedence prec = utils::infix_operator_to_precendence(op);
   return new Expression{
       BinaryOperatorExpressionType,
       new BinaryOperatorExpression{op, left, parse_expression(parser, prec)}};
 }
 
-bool is_operator_token(lexer::TokenType token_type) {
-  switch (token_type) {
-    case lexer::PLUS:
-    case lexer::MINUS:
-    case lexer::MULTIPLY:
-    case lexer::DIVIDE:
-      return true;
-    default:
-      return false;
-  }
-}
 
-/*
- * Utility function that turns a token to an ifnix operators
- * TODO: Move to a utilities file later
- */
-InfixOperator token_to_infix_operator(lexer::TokenType token_t) {
-  switch (token_t) {
-    case lexer::PLUS:
-      return InfixOperator::ADDITION;
-    case lexer::MINUS:
-      return InfixOperator::SUBTRACTION;
-    case lexer::MULTIPLY:
-      return InfixOperator::MULTIPLICATION;
-    case lexer::DIVIDE:
-      return InfixOperator::DIVISION;
-    default:
-      throw std::runtime_error("Unepxect infix opeartor");
-  }
-}
-
-/*
- * Turns and InfixOperator to it's Precedence
- * TODO: Move to a utitlies file later
- */
-Precedence infix_operator_to_precendence(InfixOperator op) {
-  switch (op) {
-    case InfixOperator::ADDITION:
-    case InfixOperator::SUBTRACTION:
-      return Precedence::Term;
-    case InfixOperator::MULTIPLICATION:
-    case InfixOperator::DIVISION:
-      return Precedence::Factor;
-    default:
-      throw std::runtime_error(
-          "Unexpected Infix Operator To Precedance Conversion");
-  }
-}
-
-PrefixOp token_to_prefix(lexer::Token token) {
-  switch (token.type) {
-    case lexer::PLUS:
-      return PrefixOp::PLUS;
-    case lexer::MINUS:
-      return PrefixOp::MINUS;
-    default:
-      throw std::runtime_error("Unexpected prefix: " +
-                               lexer::token_type_to_string(token.type));
-  }
-}
 
 /*
  * Parse Prefix Operators
@@ -301,7 +244,7 @@ Expression *parse_prefix(Parser *parser) {
   lexer::Token prefix = parser->consume();
   Expression *expr = parse_expression(parser, Precedence::Lowest);
   return new Expression{PrefixExpressionType,
-                        new PrefixExpression{token_to_prefix(prefix), expr}};
+                        new PrefixExpression{utils::token_to_prefix(prefix), expr}};
 }
 
 /*

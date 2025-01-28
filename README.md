@@ -7,6 +7,14 @@ during the end of my days for fun, making good progress. Hopefully I can
 bootstrap this thing if it works, although IDK if I really want to reimplement
 the entirety of the language again in another langague.
 
+## Important Node
+
+I need to implment proper C++ memory handling, especially with my usage of
+pointers to heap allocated memory. Will implment this sometime in the near
+future, likely with unique_ptr.
+
+- [ ] Proper memory management (smart pointers)
+
 ## Lexing
 
 - [ ] Error Handling
@@ -41,4 +49,3 @@ the entirety of the language again in another langague.
 - [x] Float
 
 - [ ] String => Will represent this as a primitive
-

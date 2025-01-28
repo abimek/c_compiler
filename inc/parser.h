@@ -143,14 +143,10 @@ namespace parser {
 	Expression* parse_expression(Parser* parser, Precedence precedence);
 	Expression* parse_literal_expression(Parser* parser);
 	Expression* parse_prefix(Parser* parser);
-	PrefixOp token_to_prefix(lexer::Token token);
 	Expression* parse_ident(Parser* parser);
-	Precedence infix_operator_to_precendence(InfixOperator op);
-	InfixOperator token_to_infix_operator(lexer::TokenType token_t);
 	ExpressionList parse_expression_list(Parser* parser);
 	Expression* parse_binary_expression(Parser* parser, Expression* left, Precedence precedence);
 	std::vector<Statement> parse_statements(Parser *parser);
 	Statement parse_function_statement(Parser *parser, Type type, lexer::Token identifier);
 	Parameters parse_function_parameters(Parser *parser);
-	bool is_operator_token(lexer::TokenType token_type);
 }
