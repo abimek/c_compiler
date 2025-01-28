@@ -1,12 +1,13 @@
 #include "parser.h"
-#include "lexer.h"
-#include "utils.h"
 
 #include <cmath>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "lexer.h"
+#include "utils.h"
 
 namespace parser {
 
@@ -215,8 +216,8 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
       case lexer::DIVIDE:
         expr = parse_binary_expression(parser, expr, precedence);
         break;
-			default:
-				throw std::runtime_error("Unexpected binary operator");
+      default:
+        throw std::runtime_error("Unexpected binary operator");
     }
   }
   return expr;
@@ -235,16 +236,15 @@ Expression *parse_binary_expression(Parser *parser, Expression *left,
       new BinaryOperatorExpression{op, left, parse_expression(parser, prec)}};
 }
 
-
-
 /*
  * Parse Prefix Operators
  */
 Expression *parse_prefix(Parser *parser) {
   lexer::Token prefix = parser->consume();
   Expression *expr = parse_expression(parser, Precedence::Lowest);
-  return new Expression{PrefixExpressionType,
-                        new PrefixExpression{utils::token_to_prefix(prefix), expr}};
+  return new Expression{
+      PrefixExpressionType,
+      new PrefixExpression{utils::token_to_prefix(prefix), expr}};
 }
 
 /*

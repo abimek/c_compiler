@@ -1,3 +1,1 @@
-namespace generator {
-
-}
+namespace generator {}

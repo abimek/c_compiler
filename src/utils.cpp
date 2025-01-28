@@ -1,8 +1,9 @@
 #include "utils.h"
+
 #include "lexer.h"
 #include "parser.h"
 
-namespace utils{
+namespace utils {
 bool is_operator_token(lexer::TokenType token_type) {
   switch (token_type) {
     case lexer::PLUS:
@@ -39,11 +40,11 @@ parser::InfixOperator token_to_infix_operator(lexer::TokenType token_t) {
  */
 parser::Precedence infix_operator_to_precendence(parser::InfixOperator op) {
   switch (op) {
-		case parser::InfixOperator::ADDITION:
-		case parser::InfixOperator::SUBTRACTION:
+    case parser::InfixOperator::ADDITION:
+    case parser::InfixOperator::SUBTRACTION:
       return parser::Precedence::Term;
-		case parser::InfixOperator::MULTIPLICATION:
-		case parser::InfixOperator::DIVISION:
+    case parser::InfixOperator::MULTIPLICATION:
+    case parser::InfixOperator::DIVISION:
       return parser::Precedence::Factor;
     default:
       throw std::runtime_error(
@@ -63,4 +64,4 @@ parser::PrefixOp token_to_prefix(lexer::Token token) {
   }
 }
 
-}
+}  // namespace utils
