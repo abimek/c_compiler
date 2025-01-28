@@ -11,17 +11,27 @@ the entirety of the language again in another langague.
 ## Parsing
 
 [ ] Arrays
+
 [ ] Access operator (testing.value for structs)
+
 [x] Expression
+
 [x] Binary Operator
+
 [x] Operator Precedence
+
 [x] Function Call
+
 [x] Variable Declerations
+
 [x] Struct Decleration
+
 [x] Function Decleration
 
 ### Primitives
 [x] Int
+
 [x] Float
+
 [ ] String => Will represent this as a primitive
 
