@@ -186,7 +186,11 @@ void test_add() {
 }
 
 void test_function_statement() {
-  std::string sourcecode = "int myint(int myint){}";
+  std::string sourcecode = 
+		"\
+		int myint(int myint){\
+			int myint;\
+		}";
 
   std::vector<parser::Statement> validation_program;
 
@@ -195,7 +199,14 @@ void test_function_statement() {
       parser::Type{true, parser::Type::INT_T, ""},
       parser::Parameters{
           1, {parser::Type{true, parser::Type::INT_T, ""}}, {"myint"}},
-      {}};
+      {
+				parser::Statement{
+					parser::VARIABLE_DECLERATION,
+
+      new parser::VariableDeclerationStatement{
+          parser::Type{true, parser::Type::INT_T, ""}, "myint", nullptr}
+				}
+			}};
 
   validation_program.push_back(parser::Statement{parser::FUNCTION, func_stmt});
   bool suceeded = ast_comparer::programs_equal(
