@@ -152,4 +152,5 @@ namespace parser {
 	std::vector<Statement> parse_statements(Parser *parser);
 	Statement parse_function_statement(Parser *parser, Type type, lexer::Token identifier);
 	Parameters parse_function_parameters(Parser *parser);
+	bool is_operator_token(lexer::TokenType token_type);
 }

@@ -1,9 +1,7 @@
 #include "parser.h"
 
 #include <cmath>
-#include <iterator>
 #include <optional>
-#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -199,23 +197,18 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
       break;
   }
 
-  // we must first check to see if we reached a SEMICOLON so we can later read
-  // the precedence of the next operator
-  switch (parser->peek().type) {
-    case lexer::PLUS:
-    case lexer::MINUS:
-    case lexer::MULTIPLY:
-    case lexer::DIVIDE:
-      break;
-    default:
-      return expr;
-  }
-
-  Precedence next_prec = infix_operator_to_precendence(
-      token_to_infix_operator(parser->peek().type));
-
-  while (next_prec >= precedence) {
+	while(true){
+		if(!is_operator_token(parser->peek().type)){
+			break;
+		}
+		Precedence next_prec = infix_operator_to_precendence(
+				token_to_infix_operator(parser->peek().type));
+		if(next_prec < precedence){
+			break;
+		}
+		// Switchs operator token operations
     switch (parser->peek().type) {
+			// Anything being added here should also be added to is_operator_token
       case lexer::PLUS:
       case lexer::MINUS:
       case lexer::MULTIPLY:
@@ -223,12 +216,7 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
         expr = parse_binary_expression(parser, expr, precedence);
         break;
     }
-    if (parser->peek().type == lexer::SEMICOLON) {
-      break;
-    }
-    next_prec = infix_operator_to_precendence(
-        token_to_infix_operator(parser->peek().type));
-  }
+	}
   return expr;
 }
 
@@ -243,6 +231,18 @@ Expression *parse_binary_expression(Parser *parser, Expression *left,
   return new Expression{
       BinaryOperatorExpressionType,
       new BinaryOperatorExpression{op, left, parse_expression(parser, prec)}};
+}
+
+bool is_operator_token(lexer::TokenType token_type){
+    switch (token_type){
+      case lexer::PLUS:
+      case lexer::MINUS:
+      case lexer::MULTIPLY:
+      case lexer::DIVIDE:
+				return true;
+			default:
+				return false;
+    }
 }
 
 /*

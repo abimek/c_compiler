@@ -7,31 +7,38 @@ during the end of my days for fun, making good progress. Hopefully I can
 bootstrap this thing if it works, although IDK if I really want to reimplement
 the entirety of the language again in another langague.
 
+## Lexing
+
+- [ ] Error Handling
 
 ## Parsing
 
-[ ] Arrays
+- [ ] Error Handling w/ tips
 
-[ ] Access operator (testing.value for structs)
+- [ ] Variable Assignment / Mutability
 
-[x] Expression
+- [ ] Arrays
 
-[x] Binary Operator
+- [ ] Access operator (testing.value for structs)
 
-[x] Operator Precedence
+- [x] Expression
 
-[x] Function Call
+- [x] Binary Operator
 
-[x] Variable Declerations
+- [x] Operator Precedence
 
-[x] Struct Decleration
+- [x] Function Call
 
-[x] Function Decleration
+- [x] Variable Declerations
+
+- [x] Struct Decleration
+
+- [x] Function Decleration
 
 ### Primitives
-[x] Int
+- [x] Int
 
-[x] Float
+- [x] Float
 
-[ ] String => Will represent this as a primitive
+- [ ] String => Will represent this as a primitive
 
