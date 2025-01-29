@@ -21,12 +21,12 @@ void test_should_fail() {
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
       new parser::VariableDeclerationStatement{
-          parser::Type{true, parser::Type::INT_T, ""}, "myint",
+          parser::Type{parser::Type::Kind::INT, ""}, "myint",
           new parser::Expression{parser::PrefixExpressionType, nullptr}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test should_fail: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -36,18 +36,18 @@ void test_literal() {
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
       new parser::VariableDeclerationStatement{
-          parser::Type{true, parser::Type::INT_T, ""}, "myint",
+          parser::Type{parser::Type::Kind::INT, ""}, "myint",
           new parser::Expression{
               parser::PrefixExpressionType,
               new parser::PrefixExpression{
                   parser::PrefixOp::MINUS,
                   new parser::Expression{parser::LiteralExpressionType,
                                          new parser::LiteralExpression{
-                                             parser::Type::INT_T, "5"}}}}};
+                                             parser::Type::Kind::INT, "5"}}}}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test literal: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -57,7 +57,7 @@ void test_prefix() {
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
       new parser::VariableDeclerationStatement{
-          parser::Type{true, parser::Type::INT_T, ""}, "myint",
+          parser::Type{parser::Type::Kind::INT, ""}, "myint",
           new parser::Expression{
               parser::PrefixExpressionType,
               new parser::PrefixExpression{
@@ -68,7 +68,7 @@ void test_prefix() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_prefix: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -78,7 +78,7 @@ void test_function_call() {
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
       new parser::VariableDeclerationStatement{
-          parser::Type{true, parser::Type::INT_T, ""}, "myint",
+          parser::Type{parser::Type::Kind::INT, ""}, "myint",
           new parser::Expression{
               parser::PrefixExpressionType,
               new parser::PrefixExpression{
@@ -99,7 +99,7 @@ void test_function_call() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_function_call: " << bool_to_status(suceeded)
             << std::endl;
 }
@@ -110,7 +110,7 @@ void test_operator_precedence() {
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
       new parser::VariableDeclerationStatement{
-          parser::Type{true, parser::Type::INT_T, ""}, "myint",
+          parser::Type{parser::Type::Kind::INT, ""}, "myint",
           new parser::Expression{
               parser::BinaryOperatorExpressionType,
               new parser::BinaryOperatorExpression{
@@ -121,10 +121,10 @@ void test_operator_precedence() {
                           parser::InfixOperator::MULTIPLICATION,
                           new parser::Expression{parser::LiteralExpressionType,
                                                  new parser::LiteralExpression{
-                                                     parser::Type::INT_T, "5"}},
+                                                     parser::Type::Kind::INT, "5"}},
                           new parser::Expression{
                               parser::LiteralExpressionType,
-                              new parser::LiteralExpression{parser::Type::INT_T,
+                              new parser::LiteralExpression{parser::Type::Kind::INT,
                                                             "5"}}}},
                   new parser::Expression{
                       parser::BinaryOperatorExpressionType,
@@ -132,7 +132,7 @@ void test_operator_precedence() {
                           parser::InfixOperator::ADDITION,
                           new parser::Expression{parser::LiteralExpressionType,
                                                  new parser::LiteralExpression{
-                                                     parser::Type::INT_T, "5"}},
+                                                     parser::Type::Kind::INT, "5"}},
                           new parser::Expression{
                               parser::BinaryOperatorExpressionType,
                               new parser::BinaryOperatorExpression{
@@ -144,20 +144,20 @@ void test_operator_precedence() {
                                           new parser::Expression{
                                               parser::LiteralExpressionType,
                                               new parser::LiteralExpression{
-                                                  parser::Type::INT_T, "5"}},
+                                                  parser::Type::Kind::INT, "5"}},
                                           new parser::Expression{
                                               parser::LiteralExpressionType,
                                               new parser::LiteralExpression{
-                                                  parser::Type::INT_T, "6"}}}},
+                                                  parser::Type::Kind::INT, "6"}}}},
                                   new parser::Expression{
                                       parser::LiteralExpressionType,
                                       new parser::LiteralExpression{
-                                          parser::Type::INT_T, "5"}}}}}},
+                                          parser::Type::Kind::INT, "5"}}}}}},
               }}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_operator_precedence: " << bool_to_status(suceeded)
             << std::endl;
 }
@@ -167,21 +167,21 @@ void test_add() {
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
       new parser::VariableDeclerationStatement{
-          parser::Type{true, parser::Type::INT_T, ""}, "myint",
+          parser::Type{parser::Type::Kind::INT, ""}, "myint",
           new parser::Expression{
               parser::BinaryOperatorExpressionType,
               new parser::BinaryOperatorExpression{
                   parser::InfixOperator::ADDITION,
                   new parser::Expression{
                       parser::LiteralExpressionType,
-                      new parser::LiteralExpression{parser::Type::INT_T, "5"}},
+                      new parser::LiteralExpression{parser::Type::Kind::INT, "5"}},
                   new parser::Expression{parser::LiteralExpressionType,
                                          new parser::LiteralExpression{
-                                             parser::Type::INT_T, "5"}}}}};
+                                             parser::Type::Kind::INT, "5"}}}}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_add: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -196,18 +196,18 @@ void test_function_statement() {
 
   parser::FunctionStatement *func_stmt = new parser::FunctionStatement{
       "myint",
-      parser::Type{true, parser::Type::INT_T, ""},
-      parser::Parameters{
-          1, {parser::Type{true, parser::Type::INT_T, ""}}, {"myint"}},
-      {parser::Statement{
+      parser::Type{parser::Type::Kind::INT, ""},
+      parser::Prototype{
+          1, {parser::Type{parser::Type::Kind::INT, ""}}, {"myint"}},
+      parser::Block{{parser::Statement{
           parser::VARIABLE_DECLERATION,
 
           new parser::VariableDeclerationStatement{
-              parser::Type{true, parser::Type::INT_T, ""}, "myint", nullptr}}}};
+              parser::Type{parser::Type::Kind::INT, ""}, "myint", nullptr}}}}};
 
-  validation_program.push_back(parser::Statement{parser::FUNCTION, func_stmt});
+  validation_program.push_back(parser::Statement{parser::FUNCTION_DECLERATION, func_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test function_decleration: " << bool_to_status(suceeded)
             << std::endl;
 }
@@ -218,11 +218,11 @@ void test_variable_decleration_no_initilization() {
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
       new parser::VariableDeclerationStatement{
-          parser::Type{true, parser::Type::INT_T, ""}, "myint", nullptr};
+          parser::Type{parser::Type::Kind::INT, ""}, "myint", nullptr};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_variable_decleration_no_initilization: "
             << bool_to_status(suceeded) << std::endl;
 }
@@ -240,8 +240,8 @@ void test_struct_decleration() {
   std::vector<parser::Statement> validation_program;
 
   std::vector<parser::Type> struct_types = {
-      parser::Type{true, parser::Type::INT_T, ""},
-      parser::Type{true, parser::Type::FLOAT_T, ""}};
+      parser::Type{parser::Type::Kind::INT, ""},
+      parser::Type{parser::Type::Kind::FLOAT, ""}};
 
   std::vector<std::string> struct_identifiers = {"x", "y"};
 
@@ -252,7 +252,7 @@ void test_struct_decleration() {
       parser::Statement{parser::STRUCT_DECLERATION, decl_stmt});
 
   bool suceeded = ast_comparer::programs_equal(
-      validation_program, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
 
   std::cout << "test test_struct_decleration: " << bool_to_status(suceeded)
             << std::endl;
@@ -369,9 +369,8 @@ bool expressions_equal(parser::Expression *expr1, parser::Expression *expr2) {
 }
 
 bool types_equal(parser::Type type1, parser::Type type2) {
-  return (type1.is_primitive == type2.is_primitive) &&
-         (type1.identifier == type2.identifier) &&
-         (type1.primitive == type2.primitive);
+  return (type1.identifier == type2.identifier) &&
+         (type1.kind == type2.kind);
 }
 
 bool variable_declerations_equal(parser::VariableDeclerationStatement *decl1,
@@ -415,18 +414,18 @@ bool struct_declerations_equal(parser::StructDeclerationStatement *decl1,
          string_vector_equal(decl1->identifiers, decl2->identifiers);
 }
 
-bool parameters_equal(parser::Parameters param1, parser::Parameters param2) {
-  return (param1.num == param2.num) &&
-         type_vector_equal(param1.types, param2.types) &&
-         string_vector_equal(param1.vars, param2.vars);
+bool prototype_equal(parser::Prototype proto1, parser::Prototype proto2) {
+  return (proto1.num == proto2.num) &&
+         type_vector_equal(proto1.types, proto2.types) &&
+         string_vector_equal(proto1.vars, proto2.vars);
 }
 
 bool function_declerations_equal(parser::FunctionStatement *func1,
                                  parser::FunctionStatement *func2) {
   return (func1->identifier == func2->identifier) &&
          types_equal(func1->return_type, func2->return_type) &&
-         parameters_equal(func1->parameters, func2->parameters) &&
-         programs_equal(func1->statements, func2->statements);
+         prototype_equal(func1->prototype, func2->prototype) &&
+         blocks_equal(func1->block, func2->block);
 }
 
 bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
@@ -449,7 +448,7 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
           (parser::StructDeclerationStatement *)(stmt2.statement);
       equal = struct_declerations_equal(decl_stmt1, decl_stmt2);
     } break;
-    case parser::FUNCTION: {
+    case parser::FUNCTION_DECLERATION: {
       parser::FunctionStatement *func_stmt1 =
           (parser::FunctionStatement *)(stmt1.statement);
       parser::FunctionStatement *func_stmt2 =
@@ -460,16 +459,20 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
   return equal;
 }
 
-bool programs_equal(std::vector<parser::Statement> ast1,
-                    std::vector<parser::Statement> ast2) {
-  for (int i = 0; i < ast1.size(); i++) {
-    parser::Statement stmt1 = ast1[i];
-    parser::Statement stmt2 = ast2[i];
+bool blocks_equal(parser::Block block1, parser::Block block2){
+  for (int i = 0; i < block1.statements.size(); i++) {
+    parser::Statement stmt1 = block1.statements[i];
+    parser::Statement stmt2 = block2.statements[i];
     if (!statements_equal(stmt1, stmt2)) {
       return false;
     }
   }
   return true;
+}
+
+bool programs_equal(parser::Program p1,
+                    parser::Program p2) {
+	return blocks_equal(p1.block, p2.block);
 }
 }  // namespace ast_comparer
 // testing for the parser

@@ -2,17 +2,22 @@
 #include <optional>
 #include <string>
 #include <vector>
-
 #include "lexer.h"
+#include <llvm/IR/Value.h>
 namespace parser {
 
-enum StatementType { VARIABLE_DECLERATION, FUNCTION, STRUCT_DECLERATION };
+enum StatementType { VARIABLE_DECLERATION, FUNCTION_DECLERATION, STRUCT_DECLERATION };
+
+struct ASTNode {
+	virtual llvm::Value* codegen() = 0;
+	virtual ~ASTNode() {}
+};
 
 struct Type {
-  enum PrimitiveType { INT_T, FLOAT_T, STRING_T, VOID };
+  enum Kind { INT, FLOAT, VOID, CUSTOM};
 
-  bool is_primitive;
-  std::optional<PrimitiveType> primitive;
+  Kind kind;
+	// Identifier is used for custom types
   std::string identifier;
 };
 
@@ -33,12 +38,21 @@ enum Precedence {
 // Ran on expressions
 enum InfixOperator { ADDITION, SUBTRACTION, DIVISION, MULTIPLICATION };
 
-struct Statement {
+
+struct Statement{
   StatementType type;
   void *statement;
 };
 
-struct Parameters {
+struct Block {
+	std::vector<Statement> statements;
+};
+
+struct Program {
+	Block block;
+};
+
+struct Prototype {
   int num;
   std::vector<Type> types;
   std::vector<std::string> vars;
@@ -47,8 +61,8 @@ struct Parameters {
 struct FunctionStatement {
   std::string identifier;
   Type return_type;
-  Parameters parameters;
-  std::vector<Statement> statements;
+  Prototype prototype;
+	Block block;
 };
 
 struct Expression {
@@ -58,11 +72,11 @@ struct Expression {
 
 struct ExpressionList {
   int num;
-  std::vector<Expression *> expressions;
+  std::vector<Expression*> expressions;
 };
 
 struct LiteralExpression {
-  Type::PrimitiveType type;
+  Type::Kind type;
   std::string value;
 };
 
@@ -88,10 +102,14 @@ struct BinaryOperatorExpression {
   Expression *right;
 };
 
-struct VariableDeclerationStatement {
+struct VariableDeclerationStatement: public ASTNode{
   Type type;
   std::string name;
   Expression *expression;
+
+  VariableDeclerationStatement(Type t, std::string n, Expression* e): type(t), name(n), expression(e) {}
+
+	virtual llvm::Value* codegen() override;
 };
 
 struct StructDeclerationStatement {
@@ -115,7 +133,7 @@ struct Parser {
   bool ended();
 };
 
-std::vector<Statement> parse(std::vector<lexer::Token> tokens);
+Program parse(std::vector<lexer::Token> tokens);
 Statement parse_variable_decleration(Parser *parser, Type type,
                                      std::string identifier);
 Statement parse_statement(Parser *parser);
@@ -133,8 +151,8 @@ Expression *parse_ident(Parser *parser);
 ExpressionList parse_expression_list(Parser *parser);
 Expression *parse_binary_expression(Parser *parser, Expression *left,
                                     Precedence precedence);
-std::vector<Statement> parse_statements(Parser *parser);
-Statement parse_function_statement(Parser *parser, Type type,
+Block parse_block(Parser *parser);
+Statement parse_function_decleration(Parser *parser, Type type,
                                    lexer::Token identifier);
-Parameters parse_function_parameters(Parser *parser);
+Prototype parse_prototype(Parser *parser);
 }  // namespace parser

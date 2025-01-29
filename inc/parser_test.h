@@ -27,9 +27,10 @@ bool function_call_expressions_equal(parser::FunctionCallExpression *expr1,
                                      parser::FunctionCallExpression *expr2);
 bool expression_list_equal(parser::ExpressionList list1,
                            parser::ExpressionList list2);
-bool programs_equal(std::vector<parser::Statement> ast1,
-                    std::vector<parser::Statement> ast2);
-bool parameters_equal(parser::Parameters param1, parser::Parameters param2);
+bool programs_equal(parser::Program p1,
+                    parser::Program p2);
+bool prototypes_equal(parser::Prototype proto1, parser::Prototype proto2);
+bool blocks_equal(parser::Block block1, parser::Block block2);
 bool function_declerations_equal(parser::FunctionStatement *func1,
                                  parser::FunctionStatement *func2);
 }  // namespace ast_comparer

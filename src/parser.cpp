@@ -8,6 +8,7 @@
 
 #include "lexer.h"
 #include "utils.h"
+#include <llvm/IR/Value.h>
 
 namespace parser {
 
@@ -41,21 +42,21 @@ bool Parser::ended() { return index >= tokens.size(); }
  * Main parsing function, passing in a list of tokens to be parsed into an
  * AST represented via a vector of statements.
  */
-std::vector<Statement> parse(std::vector<lexer::Token> tokens) {
+Program parse(std::vector<lexer::Token> tokens) {
   Parser parser = {0, tokens};
-  std::vector<Statement> program_statements = parse_statements(&parser);
-  parser.program.insert(parser.program.end(), program_statements.begin(),
-                        program_statements.end());
-  return parser.program;
+  Block block = parse_block(&parser);
+  parser.program.insert(parser.program.end(), block.statements.begin(),
+                        block.statements.end());
+  return Program{block};
 }
 
-std::vector<Statement> parse_statements(Parser *parser) {
-  std::vector<Statement> statements = {};
+Block parse_block(Parser *parser) {
+	Block block = Block{{}};
   while (!parser->ended() && parser->peek().type != lexer::RCBRACKET) {
     Statement statement = parse_statement(parser);
-    statements.push_back(statement);
+    block.statements.push_back(statement);
   }
-  return statements;
+  return block;
 }
 
 // This parses a statement
@@ -87,40 +88,41 @@ Statement parse_type_statement(Parser *parser) {
     case lexer::EQUALS:
       return parse_variable_decleration(parser, type, identifier.content);
     case lexer::LPAREN:
-      return parse_function_statement(parser, type, identifier);
+      return parse_function_decleration(parser, type, identifier);
     default:
       throw std::runtime_error("Unexpected token");
   }
 }
 
-Statement parse_function_statement(Parser *parser, Type return_type,
+Statement parse_function_decleration(Parser *parser, Type return_type,
                                    lexer::Token identifier) {
-  Parameters params = parse_function_parameters(parser);
+  Prototype prototype = parse_prototype(parser);
   parser->expect(lexer::LCBRACKET);
-  std::vector<Statement> statements = parse_statements(parser);
+	Block block = parse_block(parser);
   parser->expect(lexer::RCBRACKET);
   return parser::Statement{
-      parser::StatementType::FUNCTION,
-      new parser::FunctionStatement{identifier.content, return_type, params,
-                                    statements}};
+      parser::StatementType::FUNCTION_DECLERATION,
+      new parser::FunctionStatement{identifier.content, return_type, prototype,
+                                    block}};
 }
 
-Parameters parse_function_parameters(Parser *parser) {
+Prototype parse_prototype(Parser *parser) {
   parser->expect(lexer::LPAREN);
-  Parameters params = Parameters{0, {}, {}};
+  Prototype proto = Prototype{0, {}, {}};
   while (parser->peek().type != lexer::RPAREN) {
-    params.num += 1;
-    params.types.push_back(parse_type(parser));
-    params.vars.push_back(parser->expect(lexer::IDENTIFIER).content);
+    proto.num += 1;
+    proto.types.push_back(parse_type(parser));
+    proto.vars.push_back(parser->expect(lexer::IDENTIFIER).content);
     if (parser->peek().type == lexer::COMMA) {
       parser->consume();
     }
   }
   parser->expect(lexer::RPAREN);
-  return params;
+  return proto;
 }
 
 /*
+ *
  * This parses a variable decleration, which can be either a variable
  * decleration with an expression or a variable decleration without an
  * expression.
@@ -130,7 +132,7 @@ Statement parse_variable_decleration(Parser *parser, Type type,
   if (parser->peek().type == lexer::EQUALS) {
     parser->consume();
     Expression *expr = parse_expression(parser, Precedence::Lowest);
-    VariableDeclerationStatement *var =
+    VariableDeclerationStatement* var =
         new VariableDeclerationStatement{type, identifier, expr};
     Statement stmt = {VARIABLE_DECLERATION, var};
     parser->expect(lexer::SEMICOLON);
@@ -152,19 +154,18 @@ Statement parse_variable_decleration(Parser *parser, Type type,
  */
 Type parse_type(Parser *parser) {
   lexer::Token t_type = parser->consume();
-  Type type = {true, std::nullopt, ""};
+  Type type = {Type::Kind::INT, ""};
   switch (t_type.type) {
     case lexer::INT:
-      type.primitive = Type::INT_T;
+      type.kind = Type::Kind::INT;
       break;
     case lexer::FLOAT:
-      type.primitive = Type::FLOAT_T;
-      break;
-    case lexer::STRING:
-      type.primitive = Type::STRING_T;
+      type.kind = Type::Kind::FLOAT;
       break;
     case lexer::IDENTIFIER:
-      // IMPLEMENT LATER
+			type.kind = Type::Kind::CUSTOM;
+			type.identifier = t_type.content;
+			break;
     default:
       throw std::runtime_error("INVALID TYPE");
   }
@@ -253,20 +254,20 @@ Expression *parse_prefix(Parser *parser) {
  */
 Expression *parse_literal_expression(Parser *parser) {
   lexer::Token literal = parser->consume();
-  Type::PrimitiveType type;
+  Type::Kind kind;
   switch (literal.type) {
     // Must add string check
     case lexer::INT_DATA:
-      type = Type::INT_T;
+      kind = Type::Kind::INT;
       break;
     case lexer::FLOAT_DATA:
-      type = Type::FLOAT_T;
+      kind = Type::Kind::FLOAT;
       break;
     default:
-      throw std::runtime_error("unexpected");
+      throw std::runtime_error("custom types not supported as of now");
   }
   return new Expression{LiteralExpressionType,
-                        new LiteralExpression{type, literal.content}};
+                        new LiteralExpression{kind, literal.content}};
 }
 
 /*
