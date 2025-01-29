@@ -1,4 +1,4 @@
 #pragma once
 namespace generator {
-	void init_llvm();
+void init_llvm();
 }

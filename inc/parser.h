@@ -1,23 +1,29 @@
 #pragma once
+#include <llvm/IR/Value.h>
+
 #include <optional>
 #include <string>
 #include <vector>
+
 #include "lexer.h"
-#include <llvm/IR/Value.h>
 namespace parser {
 
-enum StatementType { VARIABLE_DECLERATION, FUNCTION_DECLERATION, STRUCT_DECLERATION };
+enum StatementType {
+  VARIABLE_DECLERATION,
+  FUNCTION_DECLERATION,
+  STRUCT_DECLERATION
+};
 
 struct ASTNode {
-	virtual llvm::Value* codegen() = 0;
-	virtual ~ASTNode() {}
+  virtual llvm::Value *codegen() = 0;
+  virtual ~ASTNode() {}
 };
 
 struct Type {
-  enum Kind { INT, FLOAT, VOID, CUSTOM};
+  enum Kind { INT, FLOAT, VOID, CUSTOM };
 
   Kind kind;
-	// Identifier is used for custom types
+  // Identifier is used for custom types
   std::string identifier;
 };
 
@@ -38,18 +44,17 @@ enum Precedence {
 // Ran on expressions
 enum InfixOperator { ADDITION, SUBTRACTION, DIVISION, MULTIPLICATION };
 
-
-struct Statement{
+struct Statement {
   StatementType type;
   void *statement;
 };
 
 struct Block {
-	std::vector<Statement> statements;
+  std::vector<Statement> statements;
 };
 
 struct Program {
-	Block block;
+  Block block;
 };
 
 struct Prototype {
@@ -62,7 +67,7 @@ struct FunctionStatement {
   std::string identifier;
   Type return_type;
   Prototype prototype;
-	Block block;
+  Block block;
 };
 
 struct Expression {
@@ -72,7 +77,7 @@ struct Expression {
 
 struct ExpressionList {
   int num;
-  std::vector<Expression*> expressions;
+  std::vector<Expression *> expressions;
 };
 
 struct LiteralExpression {
@@ -102,14 +107,15 @@ struct BinaryOperatorExpression {
   Expression *right;
 };
 
-struct VariableDeclerationStatement: public ASTNode{
+struct VariableDeclerationStatement : public ASTNode {
   Type type;
   std::string name;
   Expression *expression;
 
-  VariableDeclerationStatement(Type t, std::string n, Expression* e): type(t), name(n), expression(e) {}
+  VariableDeclerationStatement(Type t, std::string n, Expression *e)
+      : type(t), name(n), expression(e) {}
 
-	virtual llvm::Value* codegen() override;
+  virtual llvm::Value *codegen() override;
 };
 
 struct StructDeclerationStatement {
@@ -153,6 +159,6 @@ Expression *parse_binary_expression(Parser *parser, Expression *left,
                                     Precedence precedence);
 Block parse_block(Parser *parser);
 Statement parse_function_decleration(Parser *parser, Type type,
-                                   lexer::Token identifier);
+                                     lexer::Token identifier);
 Prototype parse_prototype(Parser *parser);
 }  // namespace parser

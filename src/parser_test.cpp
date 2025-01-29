@@ -26,7 +26,8 @@ void test_should_fail() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test should_fail: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -47,7 +48,8 @@ void test_literal() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test literal: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -68,7 +70,8 @@ void test_prefix() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_prefix: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -99,7 +102,8 @@ void test_function_call() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_function_call: " << bool_to_status(suceeded)
             << std::endl;
 }
@@ -119,20 +123,22 @@ void test_operator_precedence() {
                       parser::BinaryOperatorExpressionType,
                       new parser::BinaryOperatorExpression{
                           parser::InfixOperator::MULTIPLICATION,
-                          new parser::Expression{parser::LiteralExpressionType,
-                                                 new parser::LiteralExpression{
-                                                     parser::Type::Kind::INT, "5"}},
                           new parser::Expression{
                               parser::LiteralExpressionType,
-                              new parser::LiteralExpression{parser::Type::Kind::INT,
-                                                            "5"}}}},
+                              new parser::LiteralExpression{
+                                  parser::Type::Kind::INT, "5"}},
+                          new parser::Expression{
+                              parser::LiteralExpressionType,
+                              new parser::LiteralExpression{
+                                  parser::Type::Kind::INT, "5"}}}},
                   new parser::Expression{
                       parser::BinaryOperatorExpressionType,
                       new parser::BinaryOperatorExpression{
                           parser::InfixOperator::ADDITION,
-                          new parser::Expression{parser::LiteralExpressionType,
-                                                 new parser::LiteralExpression{
-                                                     parser::Type::Kind::INT, "5"}},
+                          new parser::Expression{
+                              parser::LiteralExpressionType,
+                              new parser::LiteralExpression{
+                                  parser::Type::Kind::INT, "5"}},
                           new parser::Expression{
                               parser::BinaryOperatorExpressionType,
                               new parser::BinaryOperatorExpression{
@@ -144,11 +150,13 @@ void test_operator_precedence() {
                                           new parser::Expression{
                                               parser::LiteralExpressionType,
                                               new parser::LiteralExpression{
-                                                  parser::Type::Kind::INT, "5"}},
+                                                  parser::Type::Kind::INT,
+                                                  "5"}},
                                           new parser::Expression{
                                               parser::LiteralExpressionType,
                                               new parser::LiteralExpression{
-                                                  parser::Type::Kind::INT, "6"}}}},
+                                                  parser::Type::Kind::INT,
+                                                  "6"}}}},
                                   new parser::Expression{
                                       parser::LiteralExpressionType,
                                       new parser::LiteralExpression{
@@ -157,7 +165,8 @@ void test_operator_precedence() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_operator_precedence: " << bool_to_status(suceeded)
             << std::endl;
 }
@@ -172,16 +181,17 @@ void test_add() {
               parser::BinaryOperatorExpressionType,
               new parser::BinaryOperatorExpression{
                   parser::InfixOperator::ADDITION,
-                  new parser::Expression{
-                      parser::LiteralExpressionType,
-                      new parser::LiteralExpression{parser::Type::Kind::INT, "5"}},
+                  new parser::Expression{parser::LiteralExpressionType,
+                                         new parser::LiteralExpression{
+                                             parser::Type::Kind::INT, "5"}},
                   new parser::Expression{parser::LiteralExpressionType,
                                          new parser::LiteralExpression{
                                              parser::Type::Kind::INT, "5"}}}}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_add: " << bool_to_status(suceeded) << std::endl;
 }
 
@@ -195,8 +205,7 @@ void test_function_statement() {
   std::vector<parser::Statement> validation_program;
 
   parser::FunctionStatement *func_stmt = new parser::FunctionStatement{
-      "myint",
-      parser::Type{parser::Type::Kind::INT, ""},
+      "myint", parser::Type{parser::Type::Kind::INT, ""},
       parser::Prototype{
           1, {parser::Type{parser::Type::Kind::INT, ""}}, {"myint"}},
       parser::Block{{parser::Statement{
@@ -205,9 +214,11 @@ void test_function_statement() {
           new parser::VariableDeclerationStatement{
               parser::Type{parser::Type::Kind::INT, ""}, "myint", nullptr}}}}};
 
-  validation_program.push_back(parser::Statement{parser::FUNCTION_DECLERATION, func_stmt});
+  validation_program.push_back(
+      parser::Statement{parser::FUNCTION_DECLERATION, func_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test function_decleration: " << bool_to_status(suceeded)
             << std::endl;
 }
@@ -222,7 +233,8 @@ void test_variable_decleration_no_initilization() {
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
   std::cout << "test test_variable_decleration_no_initilization: "
             << bool_to_status(suceeded) << std::endl;
 }
@@ -252,7 +264,8 @@ void test_struct_decleration() {
       parser::Statement{parser::STRUCT_DECLERATION, decl_stmt});
 
   bool suceeded = ast_comparer::programs_equal(
-      parser::Program{parser::Block{validation_program}}, parser::parse(lexer::tokenize(sourcecode)));
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
 
   std::cout << "test test_struct_decleration: " << bool_to_status(suceeded)
             << std::endl;
@@ -369,8 +382,7 @@ bool expressions_equal(parser::Expression *expr1, parser::Expression *expr2) {
 }
 
 bool types_equal(parser::Type type1, parser::Type type2) {
-  return (type1.identifier == type2.identifier) &&
-         (type1.kind == type2.kind);
+  return (type1.identifier == type2.identifier) && (type1.kind == type2.kind);
 }
 
 bool variable_declerations_equal(parser::VariableDeclerationStatement *decl1,
@@ -459,7 +471,7 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
   return equal;
 }
 
-bool blocks_equal(parser::Block block1, parser::Block block2){
+bool blocks_equal(parser::Block block1, parser::Block block2) {
   for (int i = 0; i < block1.statements.size(); i++) {
     parser::Statement stmt1 = block1.statements[i];
     parser::Statement stmt2 = block2.statements[i];
@@ -470,9 +482,8 @@ bool blocks_equal(parser::Block block1, parser::Block block2){
   return true;
 }
 
-bool programs_equal(parser::Program p1,
-                    parser::Program p2) {
-	return blocks_equal(p1.block, p2.block);
+bool programs_equal(parser::Program p1, parser::Program p2) {
+  return blocks_equal(p1.block, p2.block);
 }
 }  // namespace ast_comparer
 // testing for the parser

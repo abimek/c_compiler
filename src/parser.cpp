@@ -1,5 +1,7 @@
 #include "parser.h"
 
+#include <llvm/IR/Value.h>
+
 #include <cmath>
 #include <optional>
 #include <stdexcept>
@@ -8,7 +10,6 @@
 
 #include "lexer.h"
 #include "utils.h"
-#include <llvm/IR/Value.h>
 
 namespace parser {
 
@@ -51,7 +52,7 @@ Program parse(std::vector<lexer::Token> tokens) {
 }
 
 Block parse_block(Parser *parser) {
-	Block block = Block{{}};
+  Block block = Block{{}};
   while (!parser->ended() && parser->peek().type != lexer::RCBRACKET) {
     Statement statement = parse_statement(parser);
     block.statements.push_back(statement);
@@ -95,10 +96,10 @@ Statement parse_type_statement(Parser *parser) {
 }
 
 Statement parse_function_decleration(Parser *parser, Type return_type,
-                                   lexer::Token identifier) {
+                                     lexer::Token identifier) {
   Prototype prototype = parse_prototype(parser);
   parser->expect(lexer::LCBRACKET);
-	Block block = parse_block(parser);
+  Block block = parse_block(parser);
   parser->expect(lexer::RCBRACKET);
   return parser::Statement{
       parser::StatementType::FUNCTION_DECLERATION,
@@ -132,7 +133,7 @@ Statement parse_variable_decleration(Parser *parser, Type type,
   if (parser->peek().type == lexer::EQUALS) {
     parser->consume();
     Expression *expr = parse_expression(parser, Precedence::Lowest);
-    VariableDeclerationStatement* var =
+    VariableDeclerationStatement *var =
         new VariableDeclerationStatement{type, identifier, expr};
     Statement stmt = {VARIABLE_DECLERATION, var};
     parser->expect(lexer::SEMICOLON);
@@ -163,9 +164,9 @@ Type parse_type(Parser *parser) {
       type.kind = Type::Kind::FLOAT;
       break;
     case lexer::IDENTIFIER:
-			type.kind = Type::Kind::CUSTOM;
-			type.identifier = t_type.content;
-			break;
+      type.kind = Type::Kind::CUSTOM;
+      type.identifier = t_type.content;
+      break;
     default:
       throw std::runtime_error("INVALID TYPE");
   }
