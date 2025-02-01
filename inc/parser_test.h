@@ -32,4 +32,6 @@ bool prototypes_equal(parser::Prototype proto1, parser::Prototype proto2);
 bool blocks_equal(parser::Block block1, parser::Block block2);
 bool function_declerations_equal(parser::FunctionStatement *func1,
                                  parser::FunctionStatement *func2);
+bool return_statements_equal(parser::ReturnStatement *ret_stmt1,
+                             parser::ReturnStatement *ret_stmt2);
 }  // namespace ast_comparer

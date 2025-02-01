@@ -11,15 +11,12 @@ namespace parser {
 enum StatementType {
   VARIABLE_DECLERATION,
   FUNCTION_DECLERATION,
-  STRUCT_DECLERATION
-};
-
-struct ASTNode {
-  virtual llvm::Value *codegen() = 0;
-  virtual ~ASTNode() {}
+  STRUCT_DECLERATION,
+  RETURN_STATEMENT
 };
 
 struct Type {
+  // Add string type thing alter
   enum Kind { INT, FLOAT, VOID, CUSTOM };
 
   Kind kind;
@@ -59,13 +56,13 @@ struct Program {
 
 struct Prototype {
   int num;
+  std::string identifier;
+  Type return_type;
   std::vector<Type> types;
   std::vector<std::string> vars;
 };
 
 struct FunctionStatement {
-  std::string identifier;
-  Type return_type;
   Prototype prototype;
   Block block;
 };
@@ -75,6 +72,10 @@ struct Expression {
   void *expression;
 };
 
+struct ReturnStatement {
+  Expression *expr;
+};
+
 struct ExpressionList {
   int num;
   std::vector<Expression *> expressions;
@@ -82,7 +83,15 @@ struct ExpressionList {
 
 struct LiteralExpression {
   Type::Kind type;
-  std::string value;
+  void *literal;
+};
+
+struct IntLiteral {
+  int literal;
+};
+
+struct FloatLiteral {
+  float literal;
 };
 
 struct IdentifierExpression {
@@ -107,15 +116,10 @@ struct BinaryOperatorExpression {
   Expression *right;
 };
 
-struct VariableDeclerationStatement : public ASTNode {
+struct VariableDeclerationStatement {
   Type type;
   std::string name;
   Expression *expression;
-
-  VariableDeclerationStatement(Type t, std::string n, Expression *e)
-      : type(t), name(n), expression(e) {}
-
-  virtual llvm::Value *codegen() override;
 };
 
 struct StructDeclerationStatement {
@@ -158,7 +162,9 @@ ExpressionList parse_expression_list(Parser *parser);
 Expression *parse_binary_expression(Parser *parser, Expression *left,
                                     Precedence precedence);
 Block parse_block(Parser *parser);
+Statement parse_return_statement(Parser *parser);
 Statement parse_function_decleration(Parser *parser, Type type,
                                      lexer::Token identifier);
-Prototype parse_prototype(Parser *parser);
+Prototype parse_prototype(Parser *parser, Type return_type,
+                          std::string identifier);
 }  // namespace parser

@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
   for (Token t : tokens) {
     std::cout << t << std::endl;
   }
-
   run_tests();
   return 0;
 }

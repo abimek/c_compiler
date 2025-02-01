@@ -7,6 +7,14 @@ during the end of my days for fun, making good progress. Hopefully I can
 bootstrap this thing if it works, although IDK if I really want to reimplement
 the entirety of the language again in another langague.
 
+## Lessons Learned from this project
+
+* Wrap objects using unique_ptr
+* Use more polymorphism in codebase
+* Split up datastructures used throughout the codebase (IE: AST Tree) into their
+  own files / namespaces.
+* Need to incorproate a checker / validator for my statements
+
 ## Important Node
 
 I need to implment proper C++ memory handling, especially with my usage of
@@ -20,6 +28,10 @@ future, likely with unique_ptr.
 - [ ] Error Handling
 
 ## Parsing
+
+- [ ] Extern functions 
+
+- [ ] return statement
 
 - [ ] Error Handling w/ tips
 

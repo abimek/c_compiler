@@ -68,9 +68,20 @@ Statement parse_statement(Parser *parser) {
       return parse_type_statement(parser);
     case lexer::STRUCT:
       return parse_struct_statement(parser);
+    case lexer::RETURN:
+      return parse_return_statement(parser);
     default:
-      throw std::runtime_error("unexpected error");
+      throw std::runtime_error(
+          "unexpected error (custom types not curerntly implmenets)");
   }
+}
+
+// parses a return statement
+Statement parse_return_statement(Parser *parser) {
+  parser->expect(lexer::RETURN);
+  Expression *expr = parse_expression(parser, Precedence::Lowest);
+  parser->expect(lexer::SEMICOLON);
+  return Statement{RETURN_STATEMENT, new ReturnStatement{expr}};
 }
 
 /*
@@ -97,19 +108,19 @@ Statement parse_type_statement(Parser *parser) {
 
 Statement parse_function_decleration(Parser *parser, Type return_type,
                                      lexer::Token identifier) {
-  Prototype prototype = parse_prototype(parser);
+  Prototype prototype =
+      parse_prototype(parser, return_type, identifier.content);
   parser->expect(lexer::LCBRACKET);
   Block block = parse_block(parser);
   parser->expect(lexer::RCBRACKET);
-  return parser::Statement{
-      parser::StatementType::FUNCTION_DECLERATION,
-      new parser::FunctionStatement{identifier.content, return_type, prototype,
-                                    block}};
+  return parser::Statement{parser::StatementType::FUNCTION_DECLERATION,
+                           new parser::FunctionStatement{prototype, block}};
 }
 
-Prototype parse_prototype(Parser *parser) {
+Prototype parse_prototype(Parser *parser, Type return_type,
+                          std::string identifier) {
   parser->expect(lexer::LPAREN);
-  Prototype proto = Prototype{0, {}, {}};
+  Prototype proto = Prototype{0, identifier, return_type, {}, {}};
   while (parser->peek().type != lexer::RPAREN) {
     proto.num += 1;
     proto.types.push_back(parse_type(parser));
@@ -256,19 +267,22 @@ Expression *parse_prefix(Parser *parser) {
 Expression *parse_literal_expression(Parser *parser) {
   lexer::Token literal = parser->consume();
   Type::Kind kind;
+  void *lit;
   switch (literal.type) {
     // Must add string check
     case lexer::INT_DATA:
       kind = Type::Kind::INT;
+      lit = (void *)(new IntLiteral{std::stoi(literal.content)});
       break;
     case lexer::FLOAT_DATA:
       kind = Type::Kind::FLOAT;
+      lit = (void *)(new FloatLiteral{std::stof(literal.content)});
       break;
     default:
       throw std::runtime_error("custom types not supported as of now");
   }
   return new Expression{LiteralExpressionType,
-                        new LiteralExpression{kind, literal.content}};
+                        new LiteralExpression{kind, lit}};
 }
 
 /*

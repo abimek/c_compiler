@@ -1,7 +1,7 @@
 TARGET_EXEC=keyboard
 
-CC=gcc
-CXX=g++
+CC=clang
+CXX=clang++
 
 # Linking flags (What libraries to link to, etc)
 LDFLAGS=-lstdc++ $(shell llvm-config --ldflags)

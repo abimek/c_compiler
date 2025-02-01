@@ -1,5 +1,6 @@
 #include "parser.h"
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -44,7 +45,8 @@ void test_literal() {
                   parser::PrefixOp::MINUS,
                   new parser::Expression{parser::LiteralExpressionType,
                                          new parser::LiteralExpression{
-                                             parser::Type::Kind::INT, "5"}}}}};
+                                             parser::Type::Kind::INT,
+                                             new parser::IntLiteral{5}}}}}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
@@ -126,11 +128,13 @@ void test_operator_precedence() {
                           new parser::Expression{
                               parser::LiteralExpressionType,
                               new parser::LiteralExpression{
-                                  parser::Type::Kind::INT, "5"}},
+                                  parser::Type::Kind::INT,
+                                  new parser::IntLiteral{5}}},
                           new parser::Expression{
                               parser::LiteralExpressionType,
                               new parser::LiteralExpression{
-                                  parser::Type::Kind::INT, "5"}}}},
+                                  parser::Type::Kind::INT,
+                                  new parser::IntLiteral{5}}}}},
                   new parser::Expression{
                       parser::BinaryOperatorExpressionType,
                       new parser::BinaryOperatorExpression{
@@ -138,7 +142,8 @@ void test_operator_precedence() {
                           new parser::Expression{
                               parser::LiteralExpressionType,
                               new parser::LiteralExpression{
-                                  parser::Type::Kind::INT, "5"}},
+                                  parser::Type::Kind::INT,
+                                  new parser::IntLiteral{5}}},
                           new parser::Expression{
                               parser::BinaryOperatorExpressionType,
                               new parser::BinaryOperatorExpression{
@@ -151,16 +156,18 @@ void test_operator_precedence() {
                                               parser::LiteralExpressionType,
                                               new parser::LiteralExpression{
                                                   parser::Type::Kind::INT,
-                                                  "5"}},
+                                                  new parser::IntLiteral{5}}},
                                           new parser::Expression{
                                               parser::LiteralExpressionType,
                                               new parser::LiteralExpression{
                                                   parser::Type::Kind::INT,
-                                                  "6"}}}},
+                                                  new parser::FloatLiteral{
+                                                      6.0}}}}},
                                   new parser::Expression{
                                       parser::LiteralExpressionType,
                                       new parser::LiteralExpression{
-                                          parser::Type::Kind::INT, "5"}}}}}},
+                                          parser::Type::Kind::INT,
+                                          new parser::IntLiteral{5}}}}}}},
               }}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
@@ -181,12 +188,14 @@ void test_add() {
               parser::BinaryOperatorExpressionType,
               new parser::BinaryOperatorExpression{
                   parser::InfixOperator::ADDITION,
+                  new parser::Expression{
+                      parser::LiteralExpressionType,
+                      new parser::LiteralExpression{parser::Type::Kind::INT,
+                                                    new parser::IntLiteral{5}}},
                   new parser::Expression{parser::LiteralExpressionType,
                                          new parser::LiteralExpression{
-                                             parser::Type::Kind::INT, "5"}},
-                  new parser::Expression{parser::LiteralExpressionType,
-                                         new parser::LiteralExpression{
-                                             parser::Type::Kind::INT, "5"}}}}};
+                                             parser::Type::Kind::INT,
+                                             new parser::IntLiteral{5}}}}}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
   bool suceeded = ast_comparer::programs_equal(
@@ -200,19 +209,28 @@ void test_function_statement() {
       "\
 		int myint(int myint){\
 			int myint;\
+			return myint;\
 		}";
 
   std::vector<parser::Statement> validation_program;
 
   parser::FunctionStatement *func_stmt = new parser::FunctionStatement{
-      "myint", parser::Type{parser::Type::Kind::INT, ""},
-      parser::Prototype{
-          1, {parser::Type{parser::Type::Kind::INT, ""}}, {"myint"}},
-      parser::Block{{parser::Statement{
-          parser::VARIABLE_DECLERATION,
+      parser::Prototype{1,
+                        "myint",
+                        parser::Type{parser::Type::Kind::INT, ""},
+                        {parser::Type{parser::Type::Kind::INT, ""}},
+                        {"myint"}},
+      parser::Block{
+          {parser::Statement{parser::VARIABLE_DECLERATION,
 
-          new parser::VariableDeclerationStatement{
-              parser::Type{parser::Type::Kind::INT, ""}, "myint", nullptr}}}}};
+                             new parser::VariableDeclerationStatement{
+                                 parser::Type{parser::Type::Kind::INT, ""},
+                                 "myint", nullptr}},
+           parser::Statement{
+               parser::RETURN_STATEMENT,
+               new parser::ReturnStatement{new parser::Expression{
+                   parser::IdentifierExpressionType,
+                   new parser::IdentifierExpression{"myint"}}}}}}};
 
   validation_program.push_back(
       parser::Statement{parser::FUNCTION_DECLERATION, func_stmt});
@@ -301,6 +319,11 @@ bool expression_list_equal(parser::ExpressionList list1,
   return true;
 }
 
+bool return_statements_equal(parser::ReturnStatement *ret_stmt1,
+                             parser::ReturnStatement *ret_stmt2) {
+  return expressions_equal(ret_stmt1->expr, ret_stmt2->expr);
+}
+
 bool function_call_expressions_equal(parser::FunctionCallExpression *expr1,
                                      parser::FunctionCallExpression *expr2) {
   return (expr1->identifier == expr2->identifier) &&
@@ -314,7 +337,17 @@ bool identifier_expressions_equal(parser::IdentifierExpression *expr1,
 
 bool literal_expressions_equal(parser::LiteralExpression *expr1,
                                parser::LiteralExpression *expr2) {
-  return (expr1->type == expr2->type) && (expr1->value == expr2->value);
+  switch (expr1->type) {
+    case parser::Type::Kind::INT:
+      return ((parser::IntLiteral *)(expr1->literal))->literal ==
+             ((parser::IntLiteral *)(expr2->literal))->literal;
+    case parser::Type::Kind::FLOAT:
+      return ((parser::FloatLiteral *)(expr1->literal))->literal ==
+             ((parser::FloatLiteral *)(expr2->literal))->literal;
+    default:
+      throw std::runtime_error(
+          "Custom types not implmenet - literal epxressions equal");
+  }
 }
 
 bool prefix_expressions_equal(parser::PrefixExpression *expr1,
@@ -428,15 +461,15 @@ bool struct_declerations_equal(parser::StructDeclerationStatement *decl1,
 
 bool prototype_equal(parser::Prototype proto1, parser::Prototype proto2) {
   return (proto1.num == proto2.num) &&
+         (proto1.identifier == proto2.identifier) &&
+         types_equal(proto1.return_type, proto2.return_type) &&
          type_vector_equal(proto1.types, proto2.types) &&
          string_vector_equal(proto1.vars, proto2.vars);
 }
 
 bool function_declerations_equal(parser::FunctionStatement *func1,
                                  parser::FunctionStatement *func2) {
-  return (func1->identifier == func2->identifier) &&
-         types_equal(func1->return_type, func2->return_type) &&
-         prototype_equal(func1->prototype, func2->prototype) &&
+  return prototype_equal(func1->prototype, func2->prototype) &&
          blocks_equal(func1->block, func2->block);
 }
 
@@ -466,6 +499,13 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
       parser::FunctionStatement *func_stmt2 =
           (parser::FunctionStatement *)(stmt2.statement);
       equal = function_declerations_equal(func_stmt1, func_stmt2);
+    } break;
+    case parser::RETURN_STATEMENT: {
+      parser::ReturnStatement *ret_stmt1 =
+          (parser::ReturnStatement *)(stmt1.statement);
+      parser::ReturnStatement *ret_stmt2 =
+          (parser::ReturnStatement *)(stmt2.statement);
+      equal = return_statements_equal(ret_stmt1, ret_stmt2);
     } break;
   }
   return equal;
