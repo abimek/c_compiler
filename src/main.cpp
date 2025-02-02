@@ -37,4 +37,8 @@ void run_tests() {
   parser_testing::test_operator_precedence();
   parser_testing::test_function_call();
   parser_testing::test_function_statement();
+  parser_testing::test_var_assignment();
+  parser_testing::test_if_statement();
+
+  parser_testing::test_generate_global();
 }

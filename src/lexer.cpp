@@ -41,6 +41,8 @@ std::string token_type_to_string(TokenType t) {
       return "IDENTIFIER";
     case IF:
       return "IF";
+    case ELSE:
+      return "ELSE";
     case INT:
       return "INT";
     case STRUCT:
@@ -91,6 +93,16 @@ std::string token_type_to_string(TokenType t) {
       return "RETURN";
     case VOID:
       return "VOID";
+    case GThan:
+      return "GTHAN";
+    case LThan:
+      return "LTHAN";
+    case BOOL:
+      return "BOOL";
+    case TRUE:
+      return "TRUE";
+    case FALSE:
+      return "FALSE";
   }
 }
 
@@ -137,6 +149,14 @@ std::vector<Token> tokenize(std::string sourcecode) {
         break;
       case '{':
         lexer.tokens.push_back({LCBRACKET});
+        lexer.step();
+        break;
+      case '>':
+        lexer.tokens.push_back({GThan});
+        lexer.step();
+        break;
+      case '<':
+        lexer.tokens.push_back({LThan});
         lexer.step();
         break;
       case '}':
@@ -202,6 +222,9 @@ void lex_identifier(Lexer *lexer) {
   if (identifier_token.content == "if") {
     identifier_token = {IF, ""};
   }
+  if (identifier_token.content == "else") {
+    identifier_token = {ELSE, ""};
+  }
   if (identifier_token.content == "int") {
     identifier_token = {INT, ""};
   }
@@ -217,7 +240,15 @@ void lex_identifier(Lexer *lexer) {
   if (identifier_token.content == "void") {
     identifier_token = {VOID, ""};
   }
-
+  if (identifier_token.content == "true") {
+    identifier_token = {TRUE, ""};
+  }
+  if (identifier_token.content == "false") {
+    identifier_token = {FALSE, ""};
+  }
+  if (identifier_token.content == "bool") {
+    identifier_token = {BOOL, ""};
+  }
   lexer->tokens.push_back(identifier_token);
 }
 

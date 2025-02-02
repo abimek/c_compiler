@@ -9,13 +9,17 @@ enum TokenType {
 
   // KEYWORDS
   IF,
+  ELSE,
   STRUCT,
   RETURN,
+  TRUE,
+  FALSE,
 
   // PRIMITIVES
   INT,
   FLOAT,
   VOID,
+  BOOL,
 
   // types, actually holds the data
   STRING,
@@ -44,6 +48,8 @@ enum TokenType {
   MINUS,
   MULTIPLY,
   DIVIDE,
+  GThan,
+  LThan,
 };
 
 std::string token_type_to_string(TokenType t);

@@ -65,11 +65,16 @@ Statement parse_statement(Parser *parser) {
   switch (parser->peek().type) {
     case lexer::INT:
     case lexer::FLOAT:
+    case lexer::BOOL:
       return parse_type_statement(parser);
     case lexer::STRUCT:
       return parse_struct_statement(parser);
     case lexer::RETURN:
       return parse_return_statement(parser);
+    case lexer::IDENTIFIER:
+      return parse_assignment_statement(parser);
+    case lexer::IF:
+      return parse_if_statement(parser);
     default:
       throw std::runtime_error(
           "unexpected error (custom types not curerntly implmenets)");
@@ -82,6 +87,27 @@ Statement parse_return_statement(Parser *parser) {
   Expression *expr = parse_expression(parser, Precedence::Lowest);
   parser->expect(lexer::SEMICOLON);
   return Statement{RETURN_STATEMENT, new ReturnStatement{expr}};
+}
+
+Statement parse_if_statement(Parser *parser) {
+  parser->expect(lexer::IF);
+  parser->expect(lexer::LPAREN);
+  Expression *expr = parse_expression(parser, Precedence::Lowest);
+  parser->expect(lexer::RPAREN);
+  parser->expect(lexer::LCBRACKET);
+  Block block = parse_block(parser);
+  parser->expect(lexer::RCBRACKET);
+  IfStatement *ifstmt = new IfStatement{expr, block, std::nullopt};
+  Statement stmt = {IF_STATEMENT, ifstmt};
+  if (parser->peek().type != lexer::ELSE) {
+    return stmt;
+  }
+  parser->expect(lexer::ELSE);
+  parser->expect(lexer::LCBRACKET);
+  Block else_block = parse_block(parser);
+  parser->expect(lexer::RCBRACKET);
+  ifstmt->else_block = else_block;
+  return stmt;
 }
 
 /*
@@ -115,6 +141,15 @@ Statement parse_function_decleration(Parser *parser, Type return_type,
   parser->expect(lexer::RCBRACKET);
   return parser::Statement{parser::StatementType::FUNCTION_DECLERATION,
                            new parser::FunctionStatement{prototype, block}};
+}
+
+Statement parse_assignment_statement(Parser *parser) {
+  std::string ident = parser->consume().content;
+  parser->expect(lexer::EQUALS);
+  Expression *expr = parse_expression(parser, Precedence::Lowest);
+  parser->expect(lexer::SEMICOLON);
+  return Statement{StatementType::ASSIGNMENT_STATEMENT,
+                   new VariableAssignmentStatement{ident, expr}};
 }
 
 Prototype parse_prototype(Parser *parser, Type return_type,
@@ -174,6 +209,9 @@ Type parse_type(Parser *parser) {
     case lexer::FLOAT:
       type.kind = Type::Kind::FLOAT;
       break;
+    case lexer::BOOL:
+      type.kind = Type::Kind::BOOL;
+      break;
     case lexer::IDENTIFIER:
       type.kind = Type::Kind::CUSTOM;
       type.identifier = t_type.content;
@@ -227,6 +265,9 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
       case lexer::MINUS:
       case lexer::MULTIPLY:
       case lexer::DIVIDE:
+      case lexer::GThan:
+      case lexer::DOUBLEEQUALS:
+      case lexer::LThan:
         expr = parse_binary_expression(parser, expr, precedence);
         break;
       default:
@@ -277,6 +318,12 @@ Expression *parse_literal_expression(Parser *parser) {
     case lexer::FLOAT_DATA:
       kind = Type::Kind::FLOAT;
       lit = (void *)(new FloatLiteral{std::stof(literal.content)});
+      break;
+    case lexer::TRUE:
+    case lexer::FALSE:
+      kind = Type::Kind::BOOL;
+      lit = (void *)(new BoolLiteral{
+          utils::bool_literal_token_to_bool(literal.type)});
       break;
     default:
       throw std::runtime_error("custom types not supported as of now");

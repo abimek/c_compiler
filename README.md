@@ -31,7 +31,7 @@ future, likely with unique_ptr.
 
 - [ ] Extern functions 
 
-- [ ] return statement
+- [x] return statement
 
 - [ ] Error Handling w/ tips
 

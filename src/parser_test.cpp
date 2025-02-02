@@ -1,9 +1,11 @@
 #include "parser.h"
 
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "generator.h"
 #include "lexer.h"
 #include "parser_test.h"
 
@@ -110,6 +112,20 @@ void test_function_call() {
             << std::endl;
 }
 
+void test_generate_global() {
+  std::string sourcecode =
+      "\
+			int mynumber = 25;\
+		int myint(int myint){\
+			return myint;\
+		}\
+		int main(){\
+			return myint(5+30) + mynumber;\
+		}\
+	";
+  generator::execute(parser::parse(lexer::tokenize(sourcecode)));
+}
+
 void test_operator_precedence() {
   std::string sourcecode = "int myint = 5*5+5+5*6+5;";
 
@@ -161,8 +177,7 @@ void test_operator_precedence() {
                                               parser::LiteralExpressionType,
                                               new parser::LiteralExpression{
                                                   parser::Type::Kind::INT,
-                                                  new parser::FloatLiteral{
-                                                      6.0}}}}},
+                                                  new parser::IntLiteral{6}}}}},
                                   new parser::Expression{
                                       parser::LiteralExpressionType,
                                       new parser::LiteralExpression{
@@ -204,6 +219,66 @@ void test_add() {
   std::cout << "test test_add: " << bool_to_status(suceeded) << std::endl;
 }
 
+void test_if_statement() {
+  std::string sourcecode =
+      "\
+		int myint(int myint){\
+			if(5==5){\
+				myint = 6;\
+			}else{\
+				myint = 7;\
+			}\
+		}";
+
+  std::vector<parser::Statement> validation_program;
+
+  parser::FunctionStatement *func_stmt = new parser::FunctionStatement{
+      parser::Prototype{1,
+                        "myint",
+                        parser::Type{parser::Type::Kind::INT, ""},
+                        {parser::Type{parser::Type::Kind::INT, ""}},
+                        {"myint"}},
+      parser::Block{{parser::Statement{
+          parser::IF_STATEMENT,
+          new parser::IfStatement{
+              new parser::Expression{
+                  parser::BinaryOperatorExpressionType,
+                  new parser::BinaryOperatorExpression{
+                      parser::InfixOperator::EQUAL,
+                      new parser::Expression{parser::LiteralExpressionType,
+                                             new parser::LiteralExpression{
+                                                 parser::Type::Kind::INT,
+                                                 new parser::IntLiteral{5}}},
+                      new parser::Expression{parser::LiteralExpressionType,
+                                             new parser::LiteralExpression{
+                                                 parser::Type::Kind::INT,
+                                                 new parser::IntLiteral{5}}}}},
+              parser::Block{{parser::Statement{
+                  parser::ASSIGNMENT_STATEMENT,
+                  new parser::VariableAssignmentStatement{
+                      "myint",
+                      new parser::Expression{
+                          parser::LiteralExpressionType,
+                          new parser::LiteralExpression{
+                              parser::Type::Kind::INT,
+                              new parser::IntLiteral{6}}}}}}},
+              parser::Block{{parser::Statement{
+                  parser::ASSIGNMENT_STATEMENT,
+                  new parser::VariableAssignmentStatement{
+                      "myint", new parser::Expression{
+                                   parser::LiteralExpressionType,
+                                   new parser::LiteralExpression{
+                                       parser::Type::Kind::INT,
+                                       new parser::IntLiteral{7}}}}}}}}}}}};
+
+  validation_program.push_back(
+      parser::Statement{parser::FUNCTION_DECLERATION, func_stmt});
+  bool suceeded = ast_comparer::programs_equal(
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
+  std::cout << "test if_decleration: " << bool_to_status(suceeded) << std::endl;
+}
+
 void test_function_statement() {
   std::string sourcecode =
       "\
@@ -241,6 +316,45 @@ void test_function_statement() {
             << std::endl;
 }
 
+void test_var_assignment() {
+  std::string sourcecode =
+      "\
+		int myint(int myint){\
+			myint = 5;\
+			return myint;\
+		}";
+
+  std::vector<parser::Statement> validation_program;
+
+  parser::FunctionStatement *func_stmt = new parser::FunctionStatement{
+      parser::Prototype{1,
+                        "myint",
+                        parser::Type{parser::Type::Kind::INT, ""},
+                        {parser::Type{parser::Type::Kind::INT, ""}},
+                        {"myint"}},
+      parser::Block{
+          {parser::Statement{
+               parser::ASSIGNMENT_STATEMENT,
+               new parser::VariableAssignmentStatement{
+                   "myint",
+                   new parser::Expression{parser::LiteralExpressionType,
+                                          new parser::LiteralExpression{
+                                              parser::Type::Kind::INT,
+                                              new parser::IntLiteral{5}}}}},
+           parser::Statement{
+               parser::RETURN_STATEMENT,
+               new parser::ReturnStatement{new parser::Expression{
+                   parser::IdentifierExpressionType,
+                   new parser::IdentifierExpression{"myint"}}}}}}};
+
+  validation_program.push_back(
+      parser::Statement{parser::FUNCTION_DECLERATION, func_stmt});
+  bool suceeded = ast_comparer::programs_equal(
+      parser::Program{parser::Block{validation_program}},
+      parser::parse(lexer::tokenize(sourcecode)));
+  std::cout << "test assignment_and_return: " << bool_to_status(suceeded)
+            << std::endl;
+}
 void test_variable_decleration_no_initilization() {
   std::string sourcecode = "int myint;";
 
@@ -344,6 +458,9 @@ bool literal_expressions_equal(parser::LiteralExpression *expr1,
     case parser::Type::Kind::FLOAT:
       return ((parser::FloatLiteral *)(expr1->literal))->literal ==
              ((parser::FloatLiteral *)(expr2->literal))->literal;
+    case parser::Type::Kind::BOOL:
+      return ((parser::BoolLiteral *)(expr1->literal))->literal ==
+             ((parser::BoolLiteral *)(expr2->literal))->literal;
     default:
       throw std::runtime_error(
           "Custom types not implmenet - literal epxressions equal");
@@ -467,10 +584,32 @@ bool prototype_equal(parser::Prototype proto1, parser::Prototype proto2) {
          string_vector_equal(proto1.vars, proto2.vars);
 }
 
+bool if_statements_equal(parser::IfStatement *if_stmt1,
+                         parser::IfStatement *if_stmt2) {
+  if (if_stmt1->else_block == std::nullopt &&
+      if_stmt2->else_block == std::nullopt) {
+    return expressions_equal(if_stmt1->cond, if_stmt2->cond) &&
+           blocks_equal(if_stmt1->than_block, if_stmt2->than_block);
+  }
+  if (if_stmt1->else_block != std::nullopt &&
+      if_stmt2->else_block != std::nullopt) {
+    return expressions_equal(if_stmt1->cond, if_stmt2->cond) &&
+           blocks_equal(if_stmt1->than_block, if_stmt2->than_block) &&
+           blocks_equal(*if_stmt1->else_block, *if_stmt2->else_block);
+  }
+  return false;
+}
+
 bool function_declerations_equal(parser::FunctionStatement *func1,
                                  parser::FunctionStatement *func2) {
   return prototype_equal(func1->prototype, func2->prototype) &&
          blocks_equal(func1->block, func2->block);
+}
+
+bool assignment_statements_equal(parser::VariableAssignmentStatement *stmt1,
+                                 parser::VariableAssignmentStatement *stmt2) {
+  return (stmt1->identifier == stmt2->identifier) &&
+         expressions_equal(stmt1->expression, stmt2->expression);
 }
 
 bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
@@ -485,6 +624,11 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
       parser::VariableDeclerationStatement *decl_stmt2 =
           (parser::VariableDeclerationStatement *)(stmt2.statement);
       equal = variable_declerations_equal(decl_stmt1, decl_stmt2);
+    } break;
+    case parser::IF_STATEMENT: {
+      parser::IfStatement *if_stmt1 = (parser::IfStatement *)(stmt1.statement);
+      parser::IfStatement *if_stmt2 = (parser::IfStatement *)(stmt2.statement);
+      equal = if_statements_equal(if_stmt1, if_stmt2);
     } break;
     case parser::STRUCT_DECLERATION: {
       parser::StructDeclerationStatement *decl_stmt1 =
@@ -505,7 +649,15 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
           (parser::ReturnStatement *)(stmt1.statement);
       parser::ReturnStatement *ret_stmt2 =
           (parser::ReturnStatement *)(stmt2.statement);
+
       equal = return_statements_equal(ret_stmt1, ret_stmt2);
+    } break;
+    case parser::ASSIGNMENT_STATEMENT: {
+      parser::VariableAssignmentStatement *assign_stmt =
+          (parser::VariableAssignmentStatement *)(stmt1.statement);
+      parser::VariableAssignmentStatement *assign_stmt2 =
+          (parser::VariableAssignmentStatement *)(stmt2.statement);
+      equal = assignment_statements_equal(assign_stmt, assign_stmt2);
     } break;
   }
   return equal;

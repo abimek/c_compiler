@@ -8,14 +8,19 @@ void test_prefix();
 void test_literal();
 void test_add();
 void test_should_fail();
+void test_var_assignment();
 void test_operator_precedence();
 void test_function_statement();
+void test_generate_global();
+void test_if_statement();
 }  // namespace parser_testing
 
 namespace ast_comparer {
 bool expressions_equal(parser::Expression *expr1, parser::Expression *expr2);
 bool prefix_expressions_equal(parser::PrefixExpression *expr1,
                               parser::PrefixExpression *expr2);
+bool assignment_statements_equal(parser::VariableAssignmentStatement *stmt1,
+                                 parser::VariableAssignmentStatement *stmt2);
 bool identifier_expressions_equal(parser::IdentifierExpression *expr1,
                                   parser::IdentifierExpression *expr2);
 bool literal_expressions_equal(parser::LiteralExpression *expr1,
@@ -34,4 +39,6 @@ bool function_declerations_equal(parser::FunctionStatement *func1,
                                  parser::FunctionStatement *func2);
 bool return_statements_equal(parser::ReturnStatement *ret_stmt1,
                              parser::ReturnStatement *ret_stmt2);
+bool if_statements_equal(parser::IfStatement *if_stmt1,
+                         parser::IfStatement *if_stmt2);
 }  // namespace ast_comparer

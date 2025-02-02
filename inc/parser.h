@@ -12,12 +12,14 @@ enum StatementType {
   VARIABLE_DECLERATION,
   FUNCTION_DECLERATION,
   STRUCT_DECLERATION,
-  RETURN_STATEMENT
+  RETURN_STATEMENT,
+  ASSIGNMENT_STATEMENT,
+  IF_STATEMENT
 };
 
 struct Type {
   // Add string type thing alter
-  enum Kind { INT, FLOAT, VOID, CUSTOM };
+  enum Kind { INT, FLOAT, VOID, BOOL, CUSTOM };
 
   Kind kind;
   // Identifier is used for custom types
@@ -35,11 +37,20 @@ enum ExpressionType {
 enum Precedence {
   Lowest,  // Lowest Precendence, initally passed
   Term,    // Addition Subtraction
-  Factor   // Multiplication, Division
+  Factor,  // Multiplication, Division,
+  Compare
 };
 
 // Ran on expressions
-enum InfixOperator { ADDITION, SUBTRACTION, DIVISION, MULTIPLICATION };
+enum InfixOperator {
+  ADDITION,
+  SUBTRACTION,
+  DIVISION,
+  MULTIPLICATION,
+  GREATER_THAN,
+  LESS_THAN,
+  EQUAL
+};
 
 struct Statement {
   StatementType type;
@@ -92,6 +103,21 @@ struct IntLiteral {
 
 struct FloatLiteral {
   float literal;
+};
+
+struct BoolLiteral {
+  int literal;
+};
+
+struct VariableAssignmentStatement {
+  std::string identifier;
+  Expression *expression;
+};
+
+struct IfStatement {
+  Expression *cond;
+  Block than_block;
+  std::optional<Block> else_block;
 };
 
 struct IdentifierExpression {
@@ -154,6 +180,7 @@ Expression *parse_function_call_expression(Parser *parser,
 Expression *parse_identifier_expression(Parser *parser,
                                         lexer::Token identifier_token);
 Type parse_type(Parser *parser);
+Statement parse_if_statement(Parser *parser);
 Expression *parse_expression(Parser *parser, Precedence precedence);
 Expression *parse_literal_expression(Parser *parser);
 Expression *parse_prefix(Parser *parser);
@@ -163,6 +190,7 @@ Expression *parse_binary_expression(Parser *parser, Expression *left,
                                     Precedence precedence);
 Block parse_block(Parser *parser);
 Statement parse_return_statement(Parser *parser);
+Statement parse_assignment_statement(Parser *parser);
 Statement parse_function_decleration(Parser *parser, Type type,
                                      lexer::Token identifier);
 Prototype parse_prototype(Parser *parser, Type return_type,
