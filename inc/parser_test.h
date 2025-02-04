@@ -39,6 +39,8 @@ bool function_declerations_equal(parser::FunctionStatement *func1,
                                  parser::FunctionStatement *func2);
 bool return_statements_equal(parser::ReturnStatement *ret_stmt1,
                              parser::ReturnStatement *ret_stmt2);
+bool function_call_statements_equal(parser::FunctionCallStatement* call_1,
+														 parser::FunctionCallStatement* call_2);
 bool if_statements_equal(parser::IfStatement *if_stmt1,
                          parser::IfStatement *if_stmt2);
 }  // namespace ast_comparer

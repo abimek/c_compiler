@@ -14,7 +14,8 @@ enum StatementType {
   STRUCT_DECLERATION,
   RETURN_STATEMENT,
   ASSIGNMENT_STATEMENT,
-  IF_STATEMENT
+  IF_STATEMENT,
+	FUNC_CALL_STATEMENT
 };
 
 struct Type {
@@ -131,6 +132,11 @@ struct PrefixExpression {
   Expression *expression;
 };
 
+struct FunctionCallStatement{
+  std::string identifier;
+  ExpressionList expressions;
+};
+
 struct FunctionCallExpression {
   std::string identifier;
   ExpressionList expressions;
@@ -163,6 +169,7 @@ struct Parser {
 
   lexer::Token consume();
   lexer::Token peek();
+  lexer::Token peek_ahead();
   lexer::Token expect(lexer::TokenType type);
   lexer::Token read_ahead();
 
@@ -176,7 +183,7 @@ Statement parse_statement(Parser *parser);
 Statement parse_type_statement(Parser *parser);
 Statement parse_struct_statement(Parser *parser);
 Expression *parse_function_call_expression(Parser *parser,
-                                           lexer::Token identifier_token);
+                                           lexer::Token identifier);
 Expression *parse_identifier_expression(Parser *parser,
                                         lexer::Token identifier_token);
 Type parse_type(Parser *parser);
@@ -189,8 +196,10 @@ ExpressionList parse_expression_list(Parser *parser);
 Expression *parse_binary_expression(Parser *parser, Expression *left,
                                     Precedence precedence);
 Block parse_block(Parser *parser);
+Statement parse_function_call_statement(Parser *parser);
 Statement parse_return_statement(Parser *parser);
 Statement parse_assignment_statement(Parser *parser);
+Statement parse_identifier_statement(Parser* parser);
 Statement parse_function_decleration(Parser *parser, Type type,
                                      lexer::Token identifier);
 Prototype parse_prototype(Parser *parser, Type return_type,

@@ -19,6 +19,7 @@
 #include <cwchar>
 #include <map>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <variant>
 
@@ -201,6 +202,12 @@ llvm::Value* CodeGenerator::symb_tbls_search(std::string ident) {
   }
   return nullptr;
 }
+
+llvm::Value* CodeGenerator::generate_function_call_statement(
+    parser::FunctionCallStatement* func_stmt) {
+  return generate_function_call(new parser::FunctionCallExpression{
+      func_stmt->identifier, func_stmt->expressions});
+}
 // Adds a function into the
 llvm::Function* CodeGenerator::generate_function_statement(
     parser::FunctionStatement* func_stmt) {
@@ -215,7 +222,7 @@ llvm::Function* CodeGenerator::generate_function_statement(
   for (auto& arg : func->args()) {
     current_symbol_table.table[std::string(arg.getName())] = &arg;
   }
-  generate_function_block(func_stmt->block, func->getReturnType());
+  generate_block(func_stmt->block, func->getReturnType());
   return func;
 }
 
@@ -224,18 +231,52 @@ llvm::Value* CodeGenerator::generate_return_statement(
   return builder.CreateRet(generate_expression(stmt->expr, ret_type));
 }
 
-llvm::Value* CodeGenerator::generate_if_statement(parser::IfStatement* stmt) {}
+// The return value is meaningless and shouldn't really be used for anything tbh
+llvm::Value* CodeGenerator::generate_if_statement(parser::IfStatement* stmt) {
+  llvm::Value* conditional =
+      generate_expression(stmt->cond, llvm::Type::getInt1Ty(context));
+  llvm::Function* func = builder.GetInsertBlock()->getParent();
+  ;
+  llvm::BasicBlock* than_block =
+      llvm::BasicBlock::Create(context, "than", func);
+  llvm::BasicBlock* else_block =
+      llvm::BasicBlock::Create(context, "else", func);
+  llvm::BasicBlock* merge_block =
+      llvm::BasicBlock::Create(context, "merge", func);
 
-llvm::Value* CodeGenerator::generate_function_block(parser::Block block,
-                                                    llvm::Type* ret_type) {
+  if (stmt->else_block != std::nullopt) {
+    builder.CreateCondBr(conditional, than_block, else_block);
+  } else {
+    builder.CreateCondBr(conditional, than_block, merge_block);
+  }
+
+  builder.SetInsertPoint(than_block);
+  generate_block(stmt->than_block, func->getReturnType());
+  builder.CreateBr(merge_block);
+
+  if (stmt->else_block != std::nullopt) {
+    builder.SetInsertPoint(else_block);
+    generate_block(stmt->else_block.value(), func->getReturnType());
+    builder.CreateBr(merge_block);
+  }
+  builder.SetInsertPoint(merge_block);
+  return conditional;
+}
+
+llvm::Value* CodeGenerator::generate_block(parser::Block block,
+                                           llvm::Type* ret_type) {
   for (parser::Statement stmt : block.statements) {
     switch (stmt.type) {
       case parser::StatementType::RETURN_STATEMENT:
-        return generate_return_statement(
-            (parser::ReturnStatement*)(stmt.statement), ret_type);
+        generate_return_statement((parser::ReturnStatement*)(stmt.statement),
+                                  ret_type);
         break;
       case parser::StatementType::IF_STATEMENT:
-        return generate_if_statement((parser::IfStatement*)(stmt.statement));
+        generate_if_statement((parser::IfStatement*)(stmt.statement));
+        break;
+      case parser::StatementType::FUNC_CALL_STATEMENT:
+        generate_function_call_statement(
+            (parser::FunctionCallStatement*)(stmt.statement));
         break;
       default:
         throw std::runtime_error(

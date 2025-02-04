@@ -25,6 +25,8 @@ lexer::Token Parser::consume() {
   return token;
 }
 
+lexer::Token Parser::peek_ahead() { return tokens[index + 1]; }
+
 lexer::Token Parser::peek() { return tokens[index]; }
 
 lexer::Token Parser::expect(lexer::TokenType type) {
@@ -72,7 +74,7 @@ Statement parse_statement(Parser *parser) {
     case lexer::RETURN:
       return parse_return_statement(parser);
     case lexer::IDENTIFIER:
-      return parse_assignment_statement(parser);
+      return parse_identifier_statement(parser);
     case lexer::IF:
       return parse_if_statement(parser);
     default:
@@ -141,6 +143,15 @@ Statement parse_function_decleration(Parser *parser, Type return_type,
   parser->expect(lexer::RCBRACKET);
   return parser::Statement{parser::StatementType::FUNCTION_DECLERATION,
                            new parser::FunctionStatement{prototype, block}};
+}
+
+Statement parse_identifier_statement(Parser *parser) {
+  switch (parser->peek_ahead().type) {
+    case lexer::EQUALS:
+      return parse_assignment_statement(parser);
+    case lexer::LPAREN:
+      return parse_function_call_statement(parser);
+  }
 }
 
 Statement parse_assignment_statement(Parser *parser) {
@@ -242,7 +253,6 @@ Expression *parse_expression(Parser *parser, Precedence precedence) {
       expr = parse_prefix(parser);
       break;
     case lexer::IDENTIFIER:
-      // TODO: Should also attempt to parse a parameter call / read
       expr = parse_ident(parser);
       break;
     default:
@@ -360,12 +370,24 @@ Expression *parse_identifier_expression(Parser *parser,
  * Parses a function call expression
  */
 Expression *parse_function_call_expression(Parser *parser,
-                                           lexer::Token identifier_token) {
+                                           lexer::Token identifier) {
   ExpressionList expr_list = parse_expression_list(parser);
   parser->expect(lexer::RPAREN);
   return new Expression{
       FunctionCallExpressionType,
-      new FunctionCallExpression{identifier_token.content, expr_list}};
+      new FunctionCallExpression{identifier.content, expr_list}};
+}
+
+Statement parse_function_call_statement(Parser *parser) {
+  std::string ident = parser->expect(lexer::IDENTIFIER).content;
+  ExpressionList expr_list = parse_expression_list(parser);
+  parser->expect(lexer::RPAREN);
+
+  // accessing the variable
+  parser->expect(lexer::SEMICOLON);
+
+  return Statement{StatementType::FUNC_CALL_STATEMENT,
+                   new FunctionCallStatement{ident, expr_list}};
 }
 
 ExpressionList parse_expression_list(Parser *parser) {

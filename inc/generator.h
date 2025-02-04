@@ -32,7 +32,7 @@ struct CodeGenerator {
       parser::FunctionStatement* func_stmt);
   llvm::Type* generate_type(parser::Type type);
   llvm::Function* generate_prototype(parser::Prototype prototype);
-  llvm::Value* generate_function_block(parser::Block block,
+  llvm::Value* generate_block(parser::Block block,
                                        llvm::Type* ret_type);
   llvm::Value* generate_global_variable(
       parser::VariableDeclerationStatement* var_stmt);
@@ -48,8 +48,10 @@ struct CodeGenerator {
       parser::LiteralExpression* literal_expr);
   llvm::Value* generate_function_call(
       parser::FunctionCallExpression* func_call);
+  llvm::Value* generate_function_call_statement(
+      parser::FunctionCallStatement* func_stmt);
   llvm::Value* generate_variable_statement(
       parser::VariableDeclerationStatement* var_stmt);
-  llvm::Value* generate_if_statement(parser::IfStatement* stmt);
+	llvm::Value* generate_if_statement(parser::IfStatement* stmt);
 };
 }  // namespace generator

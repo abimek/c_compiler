@@ -80,7 +80,9 @@ void test_prefix() {
 }
 
 void test_function_call() {
-  std::string sourcecode = "int myint = -test(yay, test);";
+  std::string sourcecode =
+      "int myint = -test(yay, test);\
+		test(yay);";
 
   std::vector<parser::Statement> validation_program;
   parser::VariableDeclerationStatement *decl_stmt =
@@ -103,8 +105,16 @@ void test_function_call() {
                                    parser::IdentifierExpressionType,
                                    new parser::IdentifierExpression{
                                        "test"}}}}}}}}};
+  parser::FunctionCallStatement *func_stmt = new parser::FunctionCallStatement{
+      "test", parser::ExpressionList{
+                  1,
+                  {new parser::Expression{
+                      parser::ExpressionType::IdentifierExpressionType,
+                      new parser::IdentifierExpression{"yay"}}}}};
   validation_program.push_back(
       parser::Statement{parser::VARIABLE_DECLERATION, decl_stmt});
+  validation_program.push_back(
+      parser::Statement{parser::FUNC_CALL_STATEMENT, func_stmt});
   bool suceeded = ast_comparer::programs_equal(
       parser::Program{parser::Block{validation_program}},
       parser::parse(lexer::tokenize(sourcecode)));
@@ -116,8 +126,15 @@ void test_generate_global() {
   std::string sourcecode =
       "\
 			int mynumber = 25;\
+			int useless(){\
+			}\
 		int myint(int myint){\
-			return myint;\
+			if(myint == 6){\
+				return 6;\
+			}else{\
+				useless();\
+			}\
+			return myint+80;\
 		}\
 		int main(){\
 			return myint(5+30) + mynumber;\
@@ -228,6 +245,7 @@ void test_if_statement() {
 			}else{\
 				myint = 7;\
 			}\
+			return myint;\
 		}";
 
   std::vector<parser::Statement> validation_program;
@@ -238,38 +256,48 @@ void test_if_statement() {
                         parser::Type{parser::Type::Kind::INT, ""},
                         {parser::Type{parser::Type::Kind::INT, ""}},
                         {"myint"}},
-      parser::Block{{parser::Statement{
-          parser::IF_STATEMENT,
-          new parser::IfStatement{
-              new parser::Expression{
-                  parser::BinaryOperatorExpressionType,
-                  new parser::BinaryOperatorExpression{
-                      parser::InfixOperator::EQUAL,
-                      new parser::Expression{parser::LiteralExpressionType,
-                                             new parser::LiteralExpression{
-                                                 parser::Type::Kind::INT,
-                                                 new parser::IntLiteral{5}}},
-                      new parser::Expression{parser::LiteralExpressionType,
-                                             new parser::LiteralExpression{
-                                                 parser::Type::Kind::INT,
-                                                 new parser::IntLiteral{5}}}}},
-              parser::Block{{parser::Statement{
-                  parser::ASSIGNMENT_STATEMENT,
-                  new parser::VariableAssignmentStatement{
-                      "myint",
-                      new parser::Expression{
-                          parser::LiteralExpressionType,
-                          new parser::LiteralExpression{
-                              parser::Type::Kind::INT,
-                              new parser::IntLiteral{6}}}}}}},
-              parser::Block{{parser::Statement{
-                  parser::ASSIGNMENT_STATEMENT,
-                  new parser::VariableAssignmentStatement{
-                      "myint", new parser::Expression{
-                                   parser::LiteralExpressionType,
-                                   new parser::LiteralExpression{
-                                       parser::Type::Kind::INT,
-                                       new parser::IntLiteral{7}}}}}}}}}}}};
+      parser::Block{
+          {parser::Statement{
+               parser::IF_STATEMENT,
+               new parser::IfStatement{
+                   new parser::Expression{
+                       parser::BinaryOperatorExpressionType,
+                       new parser::BinaryOperatorExpression{
+                           parser::InfixOperator::EQUAL,
+                           new parser::Expression{
+                               parser::LiteralExpressionType,
+                               new parser::LiteralExpression{
+                                   parser::Type::Kind::INT,
+                                   new parser::IntLiteral{5}}},
+                           new parser::Expression{
+                               parser::LiteralExpressionType,
+                               new parser::LiteralExpression{
+                                   parser::Type::Kind::INT,
+                                   new parser::IntLiteral{5}}}}},
+                   parser::Block{{parser::Statement{
+                       parser::ASSIGNMENT_STATEMENT,
+                       new parser::VariableAssignmentStatement{
+                           "myint",
+                           new parser::Expression{
+                               parser::LiteralExpressionType,
+                               new parser::LiteralExpression{
+                                   parser::Type::Kind::INT,
+                                   new parser::IntLiteral{6}}}}}}},
+                   parser::Block{{parser::Statement{
+                       parser::ASSIGNMENT_STATEMENT,
+                       new parser::VariableAssignmentStatement{
+                           "myint",
+                           new parser::Expression{
+                               parser::LiteralExpressionType,
+                               new parser::LiteralExpression{
+                                   parser::Type::Kind::INT,
+                                   new parser::IntLiteral{7}}}}}}}}},
+           parser::Statement{parser::RETURN_STATEMENT,
+                             new parser::ReturnStatement{new parser::Expression{
+                                 parser::IdentifierExpressionType,
+                                 new parser::IdentifierExpression{"myint"}}}}
+
+          }}};
 
   validation_program.push_back(
       parser::Statement{parser::FUNCTION_DECLERATION, func_stmt});
@@ -612,6 +640,12 @@ bool assignment_statements_equal(parser::VariableAssignmentStatement *stmt1,
          expressions_equal(stmt1->expression, stmt2->expression);
 }
 
+bool function_call_statements_equal(parser::FunctionCallStatement *call1,
+                                    parser::FunctionCallStatement *call2) {
+  return (call1->identifier == call2->identifier) &&
+         expression_list_equal(call1->expressions, call2->expressions);
+}
+
 bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
   if (stmt1.type != stmt2.type) {
     return false;
@@ -658,6 +692,13 @@ bool statements_equal(parser::Statement stmt1, parser::Statement stmt2) {
       parser::VariableAssignmentStatement *assign_stmt2 =
           (parser::VariableAssignmentStatement *)(stmt2.statement);
       equal = assignment_statements_equal(assign_stmt, assign_stmt2);
+    } break;
+    case parser::FUNC_CALL_STATEMENT: {
+      parser::FunctionCallStatement *func_call_stmt =
+          (parser::FunctionCallStatement *)(stmt1.statement);
+      parser::FunctionCallStatement *func_call_stmt2 =
+          (parser::FunctionCallStatement *)(stmt2.statement);
+      equal = function_call_statements_equal(func_call_stmt, func_call_stmt2);
     } break;
   }
   return equal;
