@@ -77,6 +77,9 @@ Statement parse_statement(Parser *parser) {
       return parse_identifier_statement(parser);
     case lexer::IF:
       return parse_if_statement(parser);
+    case lexer::COMMENT:
+      parser->consume();
+      return parse_statement(parser);
     default:
       throw std::runtime_error(
           "unexpected error (custom types not curerntly implmenets)");

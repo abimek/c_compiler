@@ -58,6 +58,12 @@ future, likely with unique_ptr.
 ### Primitives
 - [x] Int
 
+- [ ] Int32
+
+- [ ] Int64
+
 - [x] Float
+
+- [x] Boolean
 
 - [ ] String => Will represent this as a primitive

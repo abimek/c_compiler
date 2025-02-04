@@ -136,6 +136,7 @@ void test_generate_global() {
 			}\
 			return myint+80;\
 		}\
+		//testing\
 		int main(){\
 			return myint(5+30) + mynumber;\
 		}\

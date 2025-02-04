@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "generator.h"
 #include "lexer.h"
 #include "parser.h"
 #include "parser_test.h"
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]) {
   for (Token t : tokens) {
     std::cout << t << std::endl;
   }
+  generator::execute(parser::parse(lexer::tokenize(str)));
   run_tests();
   return 0;
 }
@@ -39,6 +41,4 @@ void run_tests() {
   parser_testing::test_function_statement();
   parser_testing::test_var_assignment();
   parser_testing::test_if_statement();
-
-  parser_testing::test_generate_global();
 }
