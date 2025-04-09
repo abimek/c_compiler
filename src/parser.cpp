@@ -13,6 +13,10 @@
 
 namespace parser {
 
+lexer::Token Parser::peek_ahead() { return tokens[index + 1]; }
+lexer::Token Parser::peek() { return tokens[index]; }
+bool Parser::ended() { return index >= tokens.size(); }
+
 lexer::Token Parser::read_ahead() {
   lexer::Token token = tokens[index + 1];
   index++;
@@ -25,10 +29,9 @@ lexer::Token Parser::consume() {
   return token;
 }
 
-lexer::Token Parser::peek_ahead() { return tokens[index + 1]; }
-
-lexer::Token Parser::peek() { return tokens[index]; }
-
+/*
+ * TODO: Log the error once I implement lines.
+ */
 lexer::Token Parser::expect(lexer::TokenType type) {
   lexer::Token token = consume();
   if (token.type == type) {
@@ -39,7 +42,9 @@ lexer::Token Parser::expect(lexer::TokenType type) {
                            lexer::token_type_to_string(token.type) + ">");
 }
 
-bool Parser::ended() { return index >= tokens.size(); }
+//--------------------------------------------------------------------------
+// Parsing Functions:
+//--------------------------------------------------------------------------
 
 /*
  * Main parsing function, passing in a list of tokens to be parsed into an
@@ -129,7 +134,7 @@ Statement parse_type_statement(Parser *parser) {
   switch (token_type) {
     case lexer::SEMICOLON:
     case lexer::EQUALS:
-      return parse_variable_decleration(parser, type, identifier.content);
+      return parse_variable_decleration_statement(parser, type, identifier.content);
     case lexer::LPAREN:
       return parse_function_decleration(parser, type, identifier);
     default:
@@ -183,12 +188,13 @@ Prototype parse_prototype(Parser *parser, Type return_type,
 }
 
 /*
+ * TODO: Proper error handling w/ log
  *
  * This parses a variable decleration, which can be either a variable
  * decleration with an expression or a variable decleration without an
  * expression.
  */
-Statement parse_variable_decleration(Parser *parser, Type type,
+Statement parse_variable_decleration_statement(Parser *parser, Type type,
                                      std::string identifier) {
   if (parser->peek().type == lexer::EQUALS) {
     parser->consume();
@@ -207,6 +213,18 @@ Statement parse_variable_decleration(Parser *parser, Type type,
     return stmt;
   }
   throw std::runtime_error("Invalid variable decleration");
+}
+
+Statement parse_function_call_statement(Parser *parser) {
+  std::string ident = parser->expect(lexer::IDENTIFIER).content;
+  ExpressionList expr_list = parse_expression_list(parser);
+  parser->expect(lexer::RPAREN);
+
+  // accessing the variable
+  parser->expect(lexer::SEMICOLON);
+
+  return Statement{StatementType::FUNC_CALL_STATEMENT,
+                   new FunctionCallStatement{ident, expr_list}};
 }
 
 /*
@@ -379,18 +397,6 @@ Expression *parse_function_call_expression(Parser *parser,
   return new Expression{
       FunctionCallExpressionType,
       new FunctionCallExpression{identifier.content, expr_list}};
-}
-
-Statement parse_function_call_statement(Parser *parser) {
-  std::string ident = parser->expect(lexer::IDENTIFIER).content;
-  ExpressionList expr_list = parse_expression_list(parser);
-  parser->expect(lexer::RPAREN);
-
-  // accessing the variable
-  parser->expect(lexer::SEMICOLON);
-
-  return Statement{StatementType::FUNC_CALL_STATEMENT,
-                   new FunctionCallStatement{ident, expr_list}};
 }
 
 ExpressionList parse_expression_list(Parser *parser) {

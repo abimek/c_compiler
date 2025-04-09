@@ -58,19 +58,25 @@ std::string token_type_to_string(TokenType t);
 struct Token {
   TokenType type;
   std::string content;
+	int line;
+	int offset;
 };
 std::ostream &operator<<(std::ostream &os, Token token);
 
 // Main lexer construct
 struct Lexer {
+	int current_line;
+	int current_line_offset;
+
   int last_char;
   int current_char;
   std::string sourcecode;
   std::vector<Token> tokens;
-
   void step();
   char read_current_char();
   char read_next_char();
+	Token mark_token_location(Token &token);
+	Token mark_token_location(Token &&token);
 };
 
 std::vector<Token> tokenize(std::string sourcecode);

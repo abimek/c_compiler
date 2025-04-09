@@ -1,7 +1,16 @@
+# Current Working On
+
+-- Logging
+--> Need to implement custom log class to implement my own printing system for
+errors that makes it easier to see where the error is.
+--> Afterwards I need to throw an exception and catch it in main, letting the
+program close
+
+- After I need to go and clean up my memory usage if that's any way possible.
+
 # A C Compiler I'm working on for fun right now
 
-This is supposed to turn into a better version of my distributed programming
-language, I will be using llvm for the backend connections and slowly begin
+I will be using llvm for the backend connections and slowly begin
 implementing more language features as I go along. Currently working on this
 during the end of my days for fun, making good progress. Hopefully I can
 bootstrap this thing if it works, although IDK if I really want to reimplement
@@ -21,11 +30,11 @@ I need to implment proper C++ memory handling, especially with my usage of
 pointers to heap allocated memory. Will implment this sometime in the near
 future, likely with unique_ptr.
 
+I will likely rewrite this to follow better practices or slowly update it.
+
 - [ ] Proper memory management (smart pointers)
 
 ## Lexing
-
-- [ ] Error Handling
 
 ## Parsing
 

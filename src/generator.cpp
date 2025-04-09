@@ -33,6 +33,7 @@
 namespace generator {
 
 void SymbolTable::clear() { table.clear(); }
+void AllocSymbolTable::clear() { table.clear(); }
 
 CodeGenerator::CodeGenerator()
     : mod("<translation_unit>", context), builder(context) {}
@@ -40,6 +41,7 @@ CodeGenerator::CodeGenerator()
 // Executes the generation process on a program
 void execute(parser::Program program) {
   CodeGenerator generator = CodeGenerator{};
+  generator.generate_print_function_int();
   for (parser::Statement stmt : program.block.statements) {
     switch (stmt.type) {
       case parser::StatementType::FUNCTION_DECLERATION:
@@ -55,7 +57,10 @@ void execute(parser::Program program) {
             "code generation for statement is currently not implemented");
     }
   }
-  generator.mod.print(llvm::errs(), nullptr);
+  std::error_code EC;
+  llvm::raw_fd_ostream file("out.ll", EC);
+  generator.mod.print(file, nullptr);
+  file.close();
 }
 
 llvm::Value* CodeGenerator::generate_global_variable(
@@ -69,8 +74,53 @@ llvm::Value* CodeGenerator::generate_global_variable(
                                   name);
 }
 
-llvm::Value* CodeGenerator::generate_variable_statement(
-    parser::VariableDeclerationStatement* var_stmt) {};
+// Creates a brand new alloc
+llvm::AllocaInst* CodeGenerator::generate_alloc_new(std::string ident,
+                                                    llvm::Function* func,
+                                                    llvm::Type* type) {
+  llvm::IRBuilder<> TmpB(&func->getEntryBlock(), func->getEntryBlock().begin());
+  llvm::AllocaInst* inst = TmpB.CreateAlloca(type, nullptr, ident);
+  alloc_symbol_table.table[ident] = inst;
+  return inst;
+}
+
+llvm::Value* CodeGenerator::generate_alloc_load(std::string ident) {
+  if (!alloc_symbol_table.table.count(ident)) {
+    throw std::runtime_error("Alloc does not exist");
+  }
+  llvm::AllocaInst* alloc = alloc_symbol_table.table[ident];
+  return builder.CreateLoad(alloc->getAllocatedType(), alloc, ident.c_str());
+}
+
+llvm::Value* CodeGenerator::generate_alloc_store(llvm::Value* value,
+                                                 std::string ident) {
+  if (!alloc_symbol_table.table.count(ident)) {
+    throw std::runtime_error("Alloc does not exist");
+  }
+  llvm::AllocaInst* alloc = alloc_symbol_table.table[ident];
+  return builder.CreateStore(value, alloc);
+}
+
+// generates variable assignemnt
+llvm::Value* CodeGenerator::generate_assignment_statement(
+    parser::VariableAssignmentStatement* stmt) {
+  if (alloc_symbol_table.table.count(stmt->identifier)) {
+    llvm::Type* type = alloc_symbol_table.table[stmt->identifier]->getType();
+    llvm::Value* val = generate_expression(stmt->expression, type);
+    return generate_alloc_store(val, stmt->identifier);
+  }
+  throw std::runtime_error("Variable Not Allocated");
+}
+
+// Need to generate an alloc statement.
+llvm::AllocaInst* CodeGenerator::generate_variable_dec_statement(
+    parser::VariableDeclerationStatement* var_stmt, llvm::Function* func) {
+  if (alloc_symbol_table.table.count(var_stmt->name)) {
+    throw std::runtime_error("Can't redeclare a declared variable");
+  }
+  llvm::Type* type = generate_type(var_stmt->type);
+  return generate_alloc_new(var_stmt->name, func, type);
+};
 
 llvm::Value* CodeGenerator::generate_function_call(
     parser::FunctionCallExpression* func_call) {
@@ -133,11 +183,15 @@ llvm::Value* CodeGenerator::generate_binop_expression(
 
 llvm::Value* CodeGenerator::generate_identifier_expression(
     parser::IdentifierExpression* ident) {
-  llvm::Value* val = symb_tbls_search(ident->identifier);
-  if (val == nullptr) {
-    throw std::runtime_error("Identifier does not exist");
+  // Run a load if alloca
+  if (alloc_symbol_table.table.count(ident->identifier)) {
+    return generate_alloc_load(ident->identifier);
   }
-  return val;
+  // We then search the global symbol table
+  if (global_symbol_table.table.count(ident->identifier)) {
+    return global_symbol_table.table[ident->identifier];
+  }
+  return nullptr;
 }
 
 llvm::Value* CodeGenerator::generate_literal_expression(
@@ -192,21 +246,53 @@ llvm::Value* CodeGenerator::generate_expression(parser::Expression* expr,
   return val;
 }
 
-// Returns nullptr if the symbol doesn't exist
-llvm::Value* CodeGenerator::symb_tbls_search(std::string ident) {
-  if (current_symbol_table.table.count(ident)) {
-    return current_symbol_table.table[ident];
-  }
-  if (global_symbol_table.table.count(ident)) {
-    return global_symbol_table.table[ident];
-  }
-  return nullptr;
-}
-
 llvm::Value* CodeGenerator::generate_function_call_statement(
     parser::FunctionCallStatement* func_stmt) {
   return generate_function_call(new parser::FunctionCallExpression{
       func_stmt->identifier, func_stmt->expressions});
+}
+
+// prints a singular number to the terminal
+void CodeGenerator::generate_print_function_int() {
+  // Generating the Printf decleration
+  llvm::Type* charType =
+      llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
+  std::vector<llvm::Type*> printfArgs = {charType};
+  llvm::FunctionType* printf_type = llvm::FunctionType::get(
+      llvm::Type::getInt32Ty(context), printfArgs, true);
+  llvm::FunctionCallee printf_calle =
+      mod.getOrInsertFunction("printf", printf_type);
+
+  // current printf calller method
+  generate_prototype(parser::Prototype{1,
+                                       "printnum",
+                                       parser::Type{parser::Type::INT, ""},
+                                       {
+                                           parser::Type{parser::Type::INT, ""},
+                                       },
+                                       {"num"}});
+  llvm::Function* func = mod.getFunction("printnum");
+  if (!func) {
+    return;
+  }
+  llvm::BasicBlock* BB = llvm::BasicBlock::Create(context, "entry", func);
+  builder.SetInsertPoint(BB);
+  for (auto& arg : func->args()) {
+    generate_alloc_new(std::string(arg.getName()), func, arg.getType());
+    generate_alloc_store(&arg, std::string(arg.getName()));
+    // automatically adds it to the entry block
+  }
+
+  llvm::Constant* fmtStr =
+      llvm::ConstantDataArray::getString(context, "%d\n", true);
+  llvm::GlobalVariable* fmtStrVar = new llvm::GlobalVariable{
+      mod,   fmtStr->getType(), true, llvm::GlobalValue::PrivateLinkage, fmtStr,
+      ".str"};
+  llvm::Value* zero = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+  llvm::Value* fmtPtr = builder.CreateInBoundsGEP(fmtStr->getType(), fmtStrVar,
+                                                  {zero, zero}, "fmt_ptr");
+  builder.CreateCall(printf_calle, {fmtPtr, generate_alloc_load("num")});
+  builder.CreateRet(zero);
 }
 // Adds a function into the
 llvm::Function* CodeGenerator::generate_function_statement(
@@ -218,11 +304,15 @@ llvm::Function* CodeGenerator::generate_function_statement(
   }
   llvm::BasicBlock* BB = llvm::BasicBlock::Create(context, "entry", func);
   builder.SetInsertPoint(BB);
-  current_symbol_table.clear();
   for (auto& arg : func->args()) {
-    current_symbol_table.table[std::string(arg.getName())] = &arg;
+    generate_alloc_new(std::string(arg.getName()), func, arg.getType());
+    generate_alloc_store(&arg, std::string(arg.getName()));
+    // automatically adds it to the entry block
   }
-  generate_block(func_stmt->block, func->getReturnType());
+  generate_block(func_stmt->block, func);
+  // Clear the current allocated variables symbol table at the end of the
+  // function, shouldn't technically need to be accessed anywhere else.
+  alloc_symbol_table.clear();
   return func;
 }
 
@@ -251,12 +341,12 @@ llvm::Value* CodeGenerator::generate_if_statement(parser::IfStatement* stmt) {
   }
 
   builder.SetInsertPoint(than_block);
-  generate_block(stmt->than_block, func->getReturnType());
+  generate_block(stmt->than_block, func);
   builder.CreateBr(merge_block);
 
   if (stmt->else_block != std::nullopt) {
     builder.SetInsertPoint(else_block);
-    generate_block(stmt->else_block.value(), func->getReturnType());
+    generate_block(stmt->else_block.value(), func);
     builder.CreateBr(merge_block);
   }
   builder.SetInsertPoint(merge_block);
@@ -264,7 +354,8 @@ llvm::Value* CodeGenerator::generate_if_statement(parser::IfStatement* stmt) {
 }
 
 llvm::Value* CodeGenerator::generate_block(parser::Block block,
-                                           llvm::Type* ret_type) {
+                                           llvm::Function* func) {
+  llvm::Type* ret_type = func->getReturnType();
   for (parser::Statement stmt : block.statements) {
     switch (stmt.type) {
       case parser::StatementType::RETURN_STATEMENT:
@@ -277,6 +368,14 @@ llvm::Value* CodeGenerator::generate_block(parser::Block block,
       case parser::StatementType::FUNC_CALL_STATEMENT:
         generate_function_call_statement(
             (parser::FunctionCallStatement*)(stmt.statement));
+        break;
+      case parser::StatementType::VARIABLE_DECLERATION:
+        generate_variable_dec_statement(
+            (parser::VariableDeclerationStatement*)(stmt.statement), func);
+        break;
+      case parser::StatementType::ASSIGNMENT_STATEMENT:
+        generate_assignment_statement(
+            (parser::VariableAssignmentStatement*)(stmt.statement));
         break;
       default:
         throw std::runtime_error(

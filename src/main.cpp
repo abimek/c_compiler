@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<Token> tokens = tokenize(str);
   for (Token t : tokens) {
-    std::cout << t << std::endl;
+    //    std::cout << t << std::endl;
   }
   generator::execute(parser::parse(lexer::tokenize(str)));
   run_tests();

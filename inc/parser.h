@@ -172,12 +172,12 @@ struct Parser {
   lexer::Token peek_ahead();
   lexer::Token expect(lexer::TokenType type);
   lexer::Token read_ahead();
-
+	void log_error(lexer::Token token, std::string message);
   bool ended();
 };
 
 Program parse(std::vector<lexer::Token> tokens);
-Statement parse_variable_decleration(Parser *parser, Type type,
+Statement parse_variable_decleration_statement(Parser *parser, Type type,
                                      std::string identifier);
 Statement parse_statement(Parser *parser);
 Statement parse_type_statement(Parser *parser);

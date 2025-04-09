@@ -7,8 +7,12 @@
 #include <vector>
 
 namespace lexer {
+
+
+
 // Lexer defined methods
 void Lexer::step() {
+	current_line_offset += 1;
   last_char += 1;
   current_char += 1;
 }
@@ -25,6 +29,18 @@ char Lexer::read_next_char() {
     throw std::runtime_error("Unable to read next char");
   }
   return sourcecode[current_char + 1];
+}
+
+Token Lexer::mark_token_location(Token &token){
+	token.line = current_line;
+	token.offset = current_line_offset;
+	return token;
+}
+
+Token Lexer::mark_token_location(Token &&token){
+	token.line = current_line;
+	token.offset = current_line_offset;
+	return token;
 }
 
 //<< Overriding for printing out Token
@@ -109,6 +125,8 @@ std::string token_type_to_string(TokenType t) {
 // CODE
 std::vector<Token> tokenize(std::string sourcecode) {
   Lexer lexer;
+	lexer.current_line = 1;
+	lexer.current_line_offset = 0;
   lexer.last_char = -1;
   lexer.current_char = 0;
   lexer.sourcecode = sourcecode;
@@ -117,66 +135,66 @@ std::vector<Token> tokenize(std::string sourcecode) {
     char current_char = lexer.read_current_char();
     switch (current_char) {
       case '+':
-        lexer.tokens.push_back({PLUS});
+        lexer.tokens.push_back(lexer.mark_token_location({PLUS}));
         lexer.step();
         break;
       case '-':
-        lexer.tokens.push_back({MINUS});
+        lexer.tokens.push_back(lexer.mark_token_location({MINUS}));
         lexer.step();
         break;
       case '*':
-        lexer.tokens.push_back({MULTIPLY});
+        lexer.tokens.push_back(lexer.mark_token_location({MULTIPLY}));
         lexer.step();
         break;
       case ',':
-        lexer.tokens.push_back({COMMA});
+        lexer.tokens.push_back(lexer.mark_token_location({COMMA}));
         lexer.step();
         break;
       case '.':
-        lexer.tokens.push_back({PERIOD});
+        lexer.tokens.push_back(lexer.mark_token_location({PERIOD}));
         lexer.step();
         break;
       case '/':
         lex_slash(&lexer);
         break;
       case '(':
-        lexer.tokens.push_back({LPAREN});
+        lexer.tokens.push_back(lexer.mark_token_location({LPAREN}));
         lexer.step();
         break;
       case ')':
-        lexer.tokens.push_back({RPAREN});
+        lexer.tokens.push_back(lexer.mark_token_location({RPAREN}));
         lexer.step();
         break;
       case '{':
-        lexer.tokens.push_back({LCBRACKET});
+        lexer.tokens.push_back(lexer.mark_token_location({LCBRACKET}));
         lexer.step();
         break;
       case '>':
-        lexer.tokens.push_back({GThan});
+        lexer.tokens.push_back(lexer.mark_token_location({GThan}));
         lexer.step();
         break;
       case '<':
-        lexer.tokens.push_back({LThan});
+        lexer.tokens.push_back(lexer.mark_token_location({LThan}));
         lexer.step();
         break;
       case '}':
-        lexer.tokens.push_back({RCBRACKET});
+        lexer.tokens.push_back(lexer.mark_token_location({RCBRACKET}));
         lexer.step();
         break;
       case '[':
-        lexer.tokens.push_back({LHBRACKET});
+        lexer.tokens.push_back(lexer.mark_token_location({LHBRACKET}));
         lexer.step();
         break;
       case ']':
-        lexer.tokens.push_back({RHBRACKET});
+        lexer.tokens.push_back(lexer.mark_token_location({RHBRACKET}));
         lexer.step();
         break;
       case ':':
-        lexer.tokens.push_back({COLON});
+        lexer.tokens.push_back(lexer.mark_token_location({COLON}));
         lexer.step();
         break;
       case ';':
-        lexer.tokens.push_back({SEMICOLON});
+        lexer.tokens.push_back(lexer.mark_token_location({SEMICOLON}));
         lexer.step();
         break;
       case '"':
@@ -186,6 +204,8 @@ std::vector<Token> tokenize(std::string sourcecode) {
         lex_equal(&lexer);
         break;
       case '\n':
+				lexer.current_line_offset = 0;
+				lexer.current_line += 1;
         lexer.step();
         break;
       case ' ':
@@ -212,6 +232,7 @@ void lex_identifier(Lexer *lexer) {
   }
 
   Token identifier_token = {IDENTIFIER, ""};
+	lexer->mark_token_location(identifier_token);
 
   while (is_int_or_letter(lexer->read_current_char())) {
     identifier_token.content += lexer->read_current_char();
@@ -220,40 +241,41 @@ void lex_identifier(Lexer *lexer) {
 
   // Handle language constructs here
   if (identifier_token.content == "if") {
-    identifier_token = {IF, ""};
+		identifier_token.type = IF;
   }
   if (identifier_token.content == "else") {
-    identifier_token = {ELSE, ""};
+		identifier_token.type = ELSE;
   }
   if (identifier_token.content == "int") {
-    identifier_token = {INT, ""};
+		identifier_token.type = INT;
   }
   if (identifier_token.content == "float") {
-    identifier_token = {FLOAT, ""};
+		identifier_token.type = FLOAT;
   }
   if (identifier_token.content == "struct") {
-    identifier_token = {STRUCT, ""};
+		identifier_token.type = STRUCT;
   }
   if (identifier_token.content == "return") {
-    identifier_token = {RETURN, ""};
+		identifier_token.type = RETURN;
   }
   if (identifier_token.content == "void") {
-    identifier_token = {VOID, ""};
+		identifier_token.type = VOID;
   }
   if (identifier_token.content == "true") {
-    identifier_token = {TRUE, ""};
+		identifier_token.type = TRUE;
   }
   if (identifier_token.content == "false") {
-    identifier_token = {FALSE, ""};
+		identifier_token.type = FALSE;
   }
   if (identifier_token.content == "bool") {
-    identifier_token = {BOOL, ""};
+		identifier_token.type = BOOL;
   }
   lexer->tokens.push_back(identifier_token);
 }
 
 void lex_number(Lexer *lexer) {
   Token number_token = {INT_DATA, ""};
+	lexer->mark_token_location(number_token);
   while (is_int(lexer->read_current_char()) ||
          lexer->read_current_char() == '.') {
     if (lexer->read_current_char() == '.') {
@@ -280,6 +302,7 @@ bool is_int_or_letter(char ch) { return is_int(ch) || is_letter(ch); }
 void lex_slash(Lexer *lexer) {
   Token token = {DIVIDE, ""};
   lexer->step();
+	lexer->mark_token_location(token);
   if (lexer->read_current_char() == '/') {
     lexer->step();
     token.type = COMMENT;
@@ -295,6 +318,7 @@ void lex_slash(Lexer *lexer) {
 void lex_equal(Lexer *lexer) {
   Token token = {EQUALS, ""};
   lexer->step();
+	lexer->mark_token_location(token);
   if (lexer->read_current_char() == '=') {
     token.type = DOUBLEEQUALS;
     lexer->step();
@@ -307,6 +331,7 @@ void lex_string(Lexer *lexer) {
   Token string_token = {STRING, ""};
   // step
   lexer->step();
+	lexer->mark_token_location(string_token);
   while (lexer->read_current_char() != '"') {
     string_token.content += lexer->read_current_char();
     lexer->step();

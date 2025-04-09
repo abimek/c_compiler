@@ -11,8 +11,18 @@
 
 namespace generator {
 
+//TODO: Currently on airplane so I can't search for how generics work but when
+//I do remember, change this symbol table to use generics 
+//
+struct AllocSymbolTable {
+	std::map<std::string, llvm::AllocaInst*> table;
+
+	void clear();
+};
+
 struct SymbolTable {
   std::map<std::string, llvm::Value*> table;
+	// This is a table sepcifically used for allocated variables
   void clear();
 };
 
@@ -22,6 +32,7 @@ struct CodeGenerator {
   llvm::LLVMContext context;
   llvm::Module mod;
   llvm::IRBuilder<> builder;
+	AllocSymbolTable alloc_symbol_table;
   SymbolTable global_symbol_table;  // contains symbols for the general program
                                     // (global variables and functions)
   SymbolTable
@@ -33,7 +44,7 @@ struct CodeGenerator {
   llvm::Type* generate_type(parser::Type type);
   llvm::Function* generate_prototype(parser::Prototype prototype);
   llvm::Value* generate_block(parser::Block block,
-                                       llvm::Type* ret_type);
+                                       llvm::Function* func);
   llvm::Value* generate_global_variable(
       parser::VariableDeclerationStatement* var_stmt);
   llvm::Value* generate_return_statement(parser::ReturnStatement* stmt,
@@ -50,8 +61,13 @@ struct CodeGenerator {
       parser::FunctionCallExpression* func_call);
   llvm::Value* generate_function_call_statement(
       parser::FunctionCallStatement* func_stmt);
-  llvm::Value* generate_variable_statement(
-      parser::VariableDeclerationStatement* var_stmt);
+  llvm::AllocaInst* generate_variable_dec_statement(
+      parser::VariableDeclerationStatement* var_stmt, llvm::Function* func);
+	llvm::Value* generate_assignment_statement(parser::VariableAssignmentStatement* stmt);
 	llvm::Value* generate_if_statement(parser::IfStatement* stmt);
+	llvm::Value* generate_alloc_load(std::string ident);
+	llvm::Value* generate_alloc_store(llvm::Value* value, std::string ident);
+	void generate_print_function_int();
+	llvm::AllocaInst* generate_alloc_new(std::string ident, llvm::Function* func, llvm::Type* type);
 };
 }  // namespace generator
